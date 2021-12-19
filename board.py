@@ -1,21 +1,8 @@
 import pygame
 import sys
 
-from pieces import Pieces
-
 pygame.init()
 pygame.font.init()
-
-START = [
-    [10, 8, 9, 11, 12, 9, 8, 10],
-    [7, 7, 7, 7, 7, 7, 7, 7],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, 1, 1],
-    [4, 2, 3, 5, 6, 3, 2, 4]
-]
 
 WIDTH = 650
 HEIGHT = 700
@@ -35,6 +22,32 @@ NUMBERFONT = pygame.font.SysFont("Helvetica", 30)
 
 DISPLAY = pygame.display.set_mode((WIDTH, HEIGHT))
 
+START = [
+    [10, 8, 9, 11, 12, 9, 8, 10],
+    [7, 7, 7, 7, 7, 7, 7, 7],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 1, 1],
+    [4, 2, 3, 5, 6, 3, 2, 4]
+]
+
+PIECES = {
+    1: pygame.image.load("img/whitePawn.png").convert_alpha(),
+    2: pygame.image.load("img/whiteKnight.png").convert_alpha(),
+    3: pygame.image.load("img/whiteBishop.png").convert_alpha(),
+    4: pygame.image.load("img/whiteRook.png").convert_alpha(),
+    5: pygame.image.load("img/whiteQueen.png").convert_alpha(),
+    6: pygame.image.load("img/whiteKing.png").convert_alpha(),
+    7: pygame.image.load("img/blackPawn.png").convert_alpha(),
+    8: pygame.image.load("img/blackKnight.png").convert_alpha(),
+    9: pygame.image.load("img/blackBishop.png").convert_alpha(),
+    10: pygame.image.load("img/blackRook.png").convert_alpha(),
+    11: pygame.image.load("img/blackQueen.png").convert_alpha(),
+    12: pygame.image.load("img/blackKing.png").convert_alpha()
+}
+
 
 def get_box_placement(x, y):
     """
@@ -46,9 +59,8 @@ def get_box_placement(x, y):
 
 
 class Board:
-    def __init__(self, activeBoard, pieces):
+    def __init__(self, activeBoard):
         self.selected = None
-        self.pieces = pieces
         self.activeBoard = activeBoard
 
     def draw_board(self):
@@ -64,13 +76,13 @@ class Board:
 
     def draw_piece(self, space):
         if self.activeBoard[space[1]][space[0]]:
-            return self.pieces.piece(self.activeBoard[space[1]][space[0]])
+            return PIECES[self.activeBoard[space[1]][space[0]]]
         return None
 
 
 def main():
     pygame.display.set_caption("Chess")
-    board = Board(START, Pieces())
+    board = Board(START)
 
     while True:
         for event in pygame.event.get():
