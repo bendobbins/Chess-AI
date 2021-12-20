@@ -2,7 +2,7 @@ import operator
 
 def valid_moves_pawn(start, board, piece, moveCounter):
     moveList = []
-    if piece in range(25, 33):
+    if piece in range(17, 33):
         moveList = check_pawn_move(board, (start[0] + 1, start[1] + 1), moveList, False)
         if start[0] != 0:
             moveList = check_pawn_move(board, (start[0] - 1, start[1] + 1), moveList, False)
@@ -50,7 +50,7 @@ def valid_moves_knight(start, board, piece):
         (start[0] - 2, start[1] - 1),
         (start[0] + 2, start[1] - 1)
     ]
-    if piece in range(21, 23):
+    if piece in range(17, 33):
         for move in possibleMoves:
             moveList = check_knight_move(board, move, moveList, False)
     else:
@@ -87,7 +87,7 @@ def valid_moves_bishop(start, board, piece):
             space = (direction[0](start[0], i), direction[1](start[1], i))
             if space[0] < 0 or space[1] < 0 or space[0] > 7 or space[1] > 7:
                 break
-            if piece in range(19, 21):
+            if piece in range(17, 33):
                 if board[space[0]][space[1]] in range(17, 33) or board[space[0]][space[1]] == 1:
                     break
                 elif board[space[0]][space[1]] in range(2, 17):
@@ -124,7 +124,7 @@ def check_rook_direction(dynamic, static, operation, dynamic_column, moveList, p
             space = (operation(dynamic, i), static)
         if space[0] < 0 or space[1] < 0 or space[0] > 7 or space[1] > 7:
             return moveList
-        if piece in range(23, 25):
+        if piece in range(17, 33):
             if board[space[0]][space[1]] in range(17, 33) or board[space[0]][space[1]] == 1:
                 return moveList
             elif board[space[0]][space[1]] in range(2, 17):
@@ -140,4 +140,12 @@ def check_rook_direction(dynamic, static, operation, dynamic_column, moveList, p
                 return moveList
             else:
                 moveList.append(space)
+    return moveList
+
+
+
+def valid_moves_queen(start, board, piece):
+    moveList = []
+    moveList += valid_moves_rook(start, board, piece)
+    moveList += valid_moves_bishop(start, board, piece)
     return moveList
