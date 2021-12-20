@@ -105,3 +105,39 @@ def valid_moves_bishop(start, board, piece):
                     moveList.append(space)
     
     return moveList
+
+
+
+def valid_moves_rook(start, board, piece):
+    moveList = []
+    moveList = check_rook_direction(start[0], start[1], operator.sub, False, moveList, piece, board)
+    moveList = check_rook_direction(start[0], start[1], operator.add, False, moveList, piece, board)
+    moveList = check_rook_direction(start[1], start[0], operator.sub, True, moveList, piece, board)
+    moveList = check_rook_direction(start[1], start[0], operator.add, True, moveList, piece, board)
+    return moveList
+            
+def check_rook_direction(dynamic, static, operation, dynamic_column, moveList, piece, board):
+    for i in range(1, 9):
+        if dynamic_column:
+            space = (static, operation(dynamic, i))
+        else:
+            space = (operation(dynamic, i), static)
+        if space[0] < 0 or space[1] < 0 or space[0] > 7 or space[1] > 7:
+            return moveList
+        if piece in range(23, 25):
+            if board[space[0]][space[1]] in range(17, 33) or board[space[0]][space[1]] == 1:
+                return moveList
+            elif board[space[0]][space[1]] in range(2, 17):
+                moveList.append(space)
+                return moveList
+            else:
+                moveList.append(space)
+        else:
+            if board[space[0]][space[1]] in range(1, 17) or board[space[0]][space[1]] == 17:
+                return moveList
+            elif board[space[0]][space[1]] in range(17, 33):
+                moveList.append(space)
+                return moveList
+            else:
+                moveList.append(space)
+    return moveList
