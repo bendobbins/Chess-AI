@@ -1,7 +1,7 @@
 import pygame
 import sys
 
-from moves import valid_moves_pawn, valid_moves_knight
+from moves import valid_moves_pawn, valid_moves_knight, valid_moves_bishop
 
 pygame.init()
 pygame.font.init()
@@ -32,7 +32,7 @@ START = [
     [17, 29, 0, 0, 0, 0, 13, 1],
     [20, 30, 0, 0, 0, 0, 14, 4],
     [22, 31, 0, 0, 0, 0, 15, 6],
-    [24, 32, 0, 0, 0, 0, 16, 8],
+    [24, 32, 0, 0, 0, 0, 16, 8]
 ]
 
 PIECES = {}
@@ -113,6 +113,8 @@ class Board:
             return valid_moves_pawn(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], MOVECOUNTER[self.activeBoard[self.selected[0]][self.selected[1]]])
         elif self.activeBoard[self.selected[0]][self.selected[1]] in range(5, 7) or self.activeBoard[self.selected[0]][self.selected[1]] in range(21, 23):
             return valid_moves_knight(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]])
+        elif self.activeBoard[self.selected[0]][self.selected[1]] in range(3, 5) or self.activeBoard[self.selected[0]][self.selected[1]] in range(19, 21):
+            return valid_moves_bishop(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]])
 
     def move_piece(self, mouse):
         if self.userTurn:

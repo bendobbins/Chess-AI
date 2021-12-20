@@ -1,3 +1,5 @@
+import operator
+
 def valid_moves_pawn(start, board, piece, moveCounter):
     moveList = []
     if piece in range(25, 33):
@@ -35,6 +37,7 @@ def check_pawn_move(board, space, moveList, white):
     return moveList
 
 
+
 def valid_moves_knight(start, board, piece):
     moveList = []
     possibleMoves = [
@@ -67,4 +70,38 @@ def check_knight_move(board, space, moveList, white):
                 moveList.append((space[0], space[1]))
     except IndexError:
         pass
+    return moveList
+
+
+
+def valid_moves_bishop(start, board, piece):
+    moveList = []
+    directions = [
+        (operator.sub, operator.add),
+        (operator.sub, operator.sub),
+        (operator.add, operator.add),
+        (operator.add, operator.sub)
+    ]
+    for direction in directions:
+        for i in range(1, 9):
+            space = (direction[0](start[0], i), direction[1](start[1], i))
+            if space[0] < 0 or space[1] < 0 or space[0] > 7 or space[1] > 7:
+                break
+            if piece in range(19, 21):
+                if board[space[0]][space[1]] in range(17, 33) or board[space[0]][space[1]] == 1:
+                    break
+                elif board[space[0]][space[1]] in range(2, 17):
+                    moveList.append(space)     
+                    break
+                else:
+                    moveList.append(space)
+            else:
+                if board[space[0]][space[1]] in range(1, 17) or board[space[0]][space[1]] == 17:
+                    break
+                elif board[space[0]][space[1]] in range(18, 33):
+                    moveList.append(space)     
+                    break
+                else:
+                    moveList.append(space)
+    
     return moveList
