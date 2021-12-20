@@ -1,7 +1,7 @@
 import pygame
 import sys
 
-from moves import valid_moves_pawn
+from moves import valid_moves_pawn, valid_moves_knight
 
 pygame.init()
 pygame.font.init()
@@ -72,9 +72,16 @@ def get_box_placement(x, y):
 
 
 class Board:
-    def __init__(self, activeBoard):
+    def __init__(self, activeBoard, userTurn):
         self.selected = None
         self.activeBoard = activeBoard
+        self.userTurn = userTurn
+
+    def change_turn(self):
+        if self.userTurn:
+            self.userTurn = False
+        else:
+            self.userTurn = True
 
     def draw_board(self):
         counter = 0
@@ -101,28 +108,38 @@ class Board:
                     return (box_x, box_y)
         return None
 
+    def get_moves(self):
+        if self.activeBoard[self.selected[0]][self.selected[1]] in range(9, 17) or self.activeBoard[self.selected[0]][self.selected[1]] in range(25, 33):
+            return valid_moves_pawn(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], MOVECOUNTER[self.activeBoard[self.selected[0]][self.selected[1]]])
+        elif self.activeBoard[self.selected[0]][self.selected[1]] in range(5, 7) or self.activeBoard[self.selected[0]][self.selected[1]] in range(21, 23):
+            return valid_moves_knight(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]])
+
     def move_piece(self, mouse):
-        if self.selected:
-            if self.activeBoard[self.selected[0]][self.selected[1]]:
-                moveSpace = self.select_square(mouse)
-                if not moveSpace:
+        if self.userTurn:
+            if self.selected:
+                if self.activeBoard[self.selected[0]][self.selected[1]]:
+                    moveSpace = self.select_square(mouse)
+                    if not moveSpace:
+                        self.selected = None
+                        return
+                    possibleMoves = self.get_moves()
+                    if possibleMoves:
+                        if moveSpace in possibleMoves:
+                            self.activeBoard[moveSpace[0]][moveSpace[1]] = self.activeBoard[self.selected[0]][self.selected[1]]
+                            MOVECOUNTER[self.activeBoard[self.selected[0]][self.selected[1]]] += 1
+                            self.activeBoard[self.selected[0]][self.selected[1]] = 0
+                            # IMPORTANT self.change_turn()
                     self.selected = None
-                    return
-                possibleMoves = valid_moves_pawn(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], MOVECOUNTER[self.activeBoard[self.selected[0]][self.selected[1]]])
-                if moveSpace in possibleMoves:
-                    self.activeBoard[moveSpace[0]][moveSpace[1]] = self.activeBoard[self.selected[0]][self.selected[1]]
-                    MOVECOUNTER[self.activeBoard[self.selected[0]][self.selected[1]]] += 1
-                    self.activeBoard[self.selected[0]][self.selected[1]] = 0
-                self.selected = None
-        else:
-            selectedSquare = self.select_square(mouse)
-            if self.activeBoard[selectedSquare[0]][selectedSquare[1]]:
-                self.selected = selectedSquare
+            else:
+                selectedSquare = self.select_square(mouse)
+                if self.activeBoard[selectedSquare[0]][selectedSquare[1]]:
+                    self.selected = selectedSquare
 
 
 def main():
     pygame.display.set_caption("Chess")
-    board = Board(START)
+    userTurn = True
+    board = Board(START, userTurn)
 
     while True:
         for event in pygame.event.get():
