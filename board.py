@@ -1,7 +1,7 @@
 import pygame
 import sys
 
-from moves import valid_moves_pawn, valid_moves_knight, valid_moves_bishop, valid_moves_rook, valid_moves_queen
+from moves import valid_moves_pawn, valid_moves_knight, valid_moves_bishop, valid_moves_rook, valid_moves_queen, valid_moves_king
 
 pygame.init()
 pygame.font.init()
@@ -71,6 +71,17 @@ def get_box_placement(x, y):
     return left, top
 
 
+def select_square(mouse):
+    for box_x in range(FIELDSIZE):
+        for box_y in range(FIELDSIZE):
+            left, top = get_box_placement(box_x, box_y)
+            box = pygame.Rect(left, top, BOXSIZE, BOXSIZE)
+            if box.collidepoint(mouse):
+                return (box_x, box_y)
+    return None
+
+
+
 class Board:
     def __init__(self, activeBoard, userTurn):
         self.selected = None
@@ -99,15 +110,6 @@ class Board:
             return PIECES[self.activeBoard[space[0]][space[1]]]
         return None
 
-    def select_square(self, mouse):
-        for box_x in range(FIELDSIZE):
-            for box_y in range(FIELDSIZE):
-                left, top = get_box_placement(box_x, box_y)
-                box = pygame.Rect(left, top, BOXSIZE, BOXSIZE)
-                if box.collidepoint(mouse):
-                    return (box_x, box_y)
-        return None
-
     def get_moves(self):
         if self.activeBoard[self.selected[0]][self.selected[1]] in range(9, 17) or self.activeBoard[self.selected[0]][self.selected[1]] in range(25, 33):
             return valid_moves_pawn(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], MOVECOUNTER[self.activeBoard[self.selected[0]][self.selected[1]]])
@@ -119,12 +121,15 @@ class Board:
             return valid_moves_rook(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]])
         elif self.activeBoard[self.selected[0]][self.selected[1]] == 2 or self.activeBoard[self.selected[0]][self.selected[1]] == 18:
             return valid_moves_queen(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]])
+        else:
+            return valid_moves_king(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]])
+
 
     def move_piece(self, mouse):
         if self.userTurn:
             if self.selected:
                 if self.activeBoard[self.selected[0]][self.selected[1]]:
-                    moveSpace = self.select_square(mouse)
+                    moveSpace = select_square(mouse)
                     if not moveSpace:
                         self.selected = None
                         return
@@ -137,7 +142,7 @@ class Board:
                             # IMPORTANT self.change_turn()
                     self.selected = None
             else:
-                selectedSquare = self.select_square(mouse)
+                selectedSquare = select_square(mouse)
                 if self.activeBoard[selectedSquare[0]][selectedSquare[1]]:
                     self.selected = selectedSquare
 
