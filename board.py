@@ -1,7 +1,7 @@
 import pygame
 import sys
 
-from moves import valid_moves_pawn, valid_moves_knight, valid_moves_bishop, valid_moves_rook, valid_moves_queen, valid_moves_king
+from moves import valid_moves_pawn, valid_moves_knight, valid_moves_bishop, valid_moves_rook, valid_moves_queen, valid_moves_king, attacked_spaces
 
 pygame.init()
 pygame.font.init()
@@ -87,12 +87,17 @@ class Board:
         self.selected = None
         self.activeBoard = activeBoard
         self.userTurn = userTurn
+        self.whiteTurn = True
 
     def change_turn(self):
         if self.userTurn:
             self.userTurn = False
         else:
             self.userTurn = True
+        if self.whiteTurn:
+            self.whiteTurn = False
+        else:
+            self.whiteTurn = True
 
     def draw_board(self):
         counter = 0
@@ -114,16 +119,15 @@ class Board:
         if self.activeBoard[self.selected[0]][self.selected[1]] in range(9, 17) or self.activeBoard[self.selected[0]][self.selected[1]] in range(25, 33):
             return valid_moves_pawn(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], MOVECOUNTER[self.activeBoard[self.selected[0]][self.selected[1]]])
         elif self.activeBoard[self.selected[0]][self.selected[1]] in range(5, 7) or self.activeBoard[self.selected[0]][self.selected[1]] in range(21, 23):
-            return valid_moves_knight(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]])
+            return valid_moves_knight(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], False)
         elif self.activeBoard[self.selected[0]][self.selected[1]] in range(3, 5) or self.activeBoard[self.selected[0]][self.selected[1]] in range(19, 21):
-            return valid_moves_bishop(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]])
+            return valid_moves_bishop(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], False)
         elif self.activeBoard[self.selected[0]][self.selected[1]] in range(7, 9) or self.activeBoard[self.selected[0]][self.selected[1]] in range(23, 25):
-            return valid_moves_rook(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]])
+            return valid_moves_rook(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], False)
         elif self.activeBoard[self.selected[0]][self.selected[1]] == 2 or self.activeBoard[self.selected[0]][self.selected[1]] == 18:
-            return valid_moves_queen(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]])
+            return valid_moves_queen(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], False)
         else:
-            return valid_moves_king(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]])
-
+            return valid_moves_king(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], True)
 
     def move_piece(self, mouse):
         if self.userTurn:
@@ -136,15 +140,53 @@ class Board:
                     possibleMoves = self.get_moves()
                     if possibleMoves:
                         if moveSpace in possibleMoves:
-                            self.activeBoard[moveSpace[0]][moveSpace[1]] = self.activeBoard[self.selected[0]][self.selected[1]]
-                            MOVECOUNTER[self.activeBoard[self.selected[0]][self.selected[1]]] += 1
-                            self.activeBoard[self.selected[0]][self.selected[1]] = 0
-                            # IMPORTANT self.change_turn()
+                            if self.activeBoard[moveSpace[0]][moveSpace[1]] != 1 and self.activeBoard[moveSpace[0]][moveSpace[1]] != 17:
+                                self.activeBoard[moveSpace[0]][moveSpace[1]] = self.activeBoard[self.selected[0]][self.selected[1]]
+                                MOVECOUNTER[self.activeBoard[self.selected[0]][self.selected[1]]] += 1
+                                self.activeBoard[self.selected[0]][self.selected[1]] = 0
+                                # IMPORTANT self.change_turn()
                     self.selected = None
             else:
                 selectedSquare = select_square(mouse)
                 if self.activeBoard[selectedSquare[0]][selectedSquare[1]]:
                     self.selected = selectedSquare
+
+    def check_checkmate_stalemate(self):
+        originalSelected = self.selected
+        if self.whiteTurn:
+            check, checkmate, stalemate = self.ccs_helper(False, range(2, 17))
+        else:
+            check, checkmate, stalemate = self.ccs_helper(True, range(18, 33))
+
+        self.selected = originalSelected
+        return check, checkmate, stalemate
+
+    def ccs_helper(self, white, range_):
+        check, checkmate, stalemate = False, False, False
+        totalMoves = []
+        attackedSpaces = attacked_spaces(self.activeBoard, white, False)
+        for i in range(len(self.activeBoard)):
+            for j in range(len(self.activeBoard)):
+                if self.activeBoard[i][j] == 1 if not white else 17:
+                    king = (i, j)
+        kingMoves = valid_moves_king(king, self.activeBoard, self.activeBoard[king[0]][king[1]], True)
+        if king in attackedSpaces:
+            check = True
+            if not kingMoves:
+                checkmate = True
+                return check, checkmate, stalemate
+        if not kingMoves:
+            for i in range_:
+                for j in range(len(self.activeBoard)):
+                    for k in range(len(self.activeBoard)):
+                        if self.activeBoard[j][k] == i:
+                            self.selected = (j, k)
+                            totalMoves += self.get_moves()
+            if not totalMoves:
+                stalemate = True
+
+        return check, checkmate, stalemate
+
 
 
 def main():
@@ -153,6 +195,13 @@ def main():
     board = Board(START, userTurn)
 
     while True:
+        check, checkmate, stalemate = board.check_checkmate_stalemate()
+        if check:
+            print("check")
+        if checkmate:
+            print("checkmate")
+        if stalemate:
+            print("stalemate")
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
