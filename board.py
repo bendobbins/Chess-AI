@@ -1,7 +1,8 @@
 import pygame
 import sys
+import copy
 
-from moves import valid_moves_pawn, valid_moves_knight, valid_moves_bishop, valid_moves_rook, valid_moves_queen, valid_moves_king, attacked_spaces
+from moves import check_knight_move, valid_moves_pawn, valid_moves_knight, valid_moves_bishop, valid_moves_rook, valid_moves_queen, valid_moves_king, attacked_spaces
 
 pygame.init()
 pygame.font.init()
@@ -61,6 +62,40 @@ MOVECOUNTER = {}
 for i in range(1, 33):
     MOVECOUNTER[i] = 0
 
+INSUFFICIENTMATERIAL = [
+    [1, 17],
+    [1, 17, 5],
+    [1, 17, 6],
+    [1, 17, 3],
+    [1, 17, 4],
+    [1, 17, 19],
+    [1, 17, 20],
+    [1, 17, 21],
+    [1, 17, 22],
+    [1, 17, 21, 22],
+    [1, 17, 5, 6],
+    [1, 17, 3, 19],
+    [1, 17, 3, 20],
+    [1, 17, 3, 21],
+    [1, 17, 3, 22],
+    [1, 17, 4, 19],
+    [1, 17, 4, 20],
+    [1, 17, 4, 21],
+    [1, 17, 4, 22],
+    [1, 17, 5, 19],
+    [1, 17, 5, 20],
+    [1, 17, 5, 21],
+    [1, 17, 5, 22],
+    [1, 17, 6, 19],
+    [1, 17, 6, 20],
+    [1, 17, 6, 21],
+    [1, 17, 6, 22]
+]
+
+FIFTYMOVECOUNTER = 0
+
+REPITITION = []
+
 
 def get_box_placement(x, y):
     """
@@ -83,17 +118,17 @@ def select_square(mouse):
 
 
 class Board:
-    def __init__(self, activeBoard, userTurn):
+    def __init__(self, board, userTurn):
         self.selected = None
-        self.activeBoard = activeBoard
+        self.board = board
         self.userTurn = userTurn
         self.whiteTurn = True
 
     def change_turn(self):
-        if self.userTurn:
-            self.userTurn = False
-        else:
-            self.userTurn = True
+        #if self.userTurn:
+        #    self.userTurn = False
+        #else:
+        #    self.userTurn = True
         if self.whiteTurn:
             self.whiteTurn = False
         else:
@@ -111,81 +146,141 @@ class Board:
             counter += 1
 
     def draw_piece(self, space):
-        if self.activeBoard[space[0]][space[1]]:
-            return PIECES[self.activeBoard[space[0]][space[1]]]
+        if self.board[space[0]][space[1]]:
+            return PIECES[self.board[space[0]][space[1]]]
         return None
 
     def get_moves(self):
-        if self.activeBoard[self.selected[0]][self.selected[1]] in range(9, 17) or self.activeBoard[self.selected[0]][self.selected[1]] in range(25, 33):
-            return valid_moves_pawn(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], MOVECOUNTER[self.activeBoard[self.selected[0]][self.selected[1]]])
-        elif self.activeBoard[self.selected[0]][self.selected[1]] in range(5, 7) or self.activeBoard[self.selected[0]][self.selected[1]] in range(21, 23):
-            return valid_moves_knight(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], False)
-        elif self.activeBoard[self.selected[0]][self.selected[1]] in range(3, 5) or self.activeBoard[self.selected[0]][self.selected[1]] in range(19, 21):
-            return valid_moves_bishop(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], False)
-        elif self.activeBoard[self.selected[0]][self.selected[1]] in range(7, 9) or self.activeBoard[self.selected[0]][self.selected[1]] in range(23, 25):
-            return valid_moves_rook(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], False)
-        elif self.activeBoard[self.selected[0]][self.selected[1]] == 2 or self.activeBoard[self.selected[0]][self.selected[1]] == 18:
-            return valid_moves_queen(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], False)
+        if self.board[self.selected[0]][self.selected[1]] in range(9, 17) or self.board[self.selected[0]][self.selected[1]] in range(25, 33):
+            return valid_moves_pawn(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], MOVECOUNTER[self.board[self.selected[0]][self.selected[1]]])
+        elif self.board[self.selected[0]][self.selected[1]] in range(5, 7) or self.board[self.selected[0]][self.selected[1]] in range(21, 23):
+            return valid_moves_knight(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
+        elif self.board[self.selected[0]][self.selected[1]] in range(3, 5) or self.board[self.selected[0]][self.selected[1]] in range(19, 21):
+            return valid_moves_bishop(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
+        elif self.board[self.selected[0]][self.selected[1]] in range(7, 9) or self.board[self.selected[0]][self.selected[1]] in range(23, 25):
+            return valid_moves_rook(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
+        elif self.board[self.selected[0]][self.selected[1]] == 2 or self.board[self.selected[0]][self.selected[1]] == 18:
+            return valid_moves_queen(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
         else:
-            return valid_moves_king(self.selected, self.activeBoard, self.activeBoard[self.selected[0]][self.selected[1]], True)
+            return valid_moves_king(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], True)
 
     def move_piece(self, mouse):
+        global FIFTYMOVECOUNTER, REPITITION
         if self.userTurn:
             if self.selected:
-                if self.activeBoard[self.selected[0]][self.selected[1]]:
+                if self.board[self.selected[0]][self.selected[1]]:
                     moveSpace = select_square(mouse)
-                    if not moveSpace:
-                        self.selected = None
-                        return
+                    if self.whiteTurn:
+                        if not moveSpace or self.board[self.selected[0]][self.selected[1]] in range(17, 33):
+                            self.selected = None
+                            return
+                    else:
+                        if not moveSpace or self.board[self.selected[0]][self.selected[1]] in range(1, 17):
+                            self.selected = None
+                            return
                     possibleMoves = self.get_moves()
                     if possibleMoves:
                         if moveSpace in possibleMoves:
-                            if self.activeBoard[moveSpace[0]][moveSpace[1]] != 1 and self.activeBoard[moveSpace[0]][moveSpace[1]] != 17:
-                                self.activeBoard[moveSpace[0]][moveSpace[1]] = self.activeBoard[self.selected[0]][self.selected[1]]
-                                MOVECOUNTER[self.activeBoard[self.selected[0]][self.selected[1]]] += 1
-                                self.activeBoard[self.selected[0]][self.selected[1]] = 0
-                                # IMPORTANT self.change_turn()
+                            if self.board[moveSpace[0]][moveSpace[1]] != 1 and self.board[moveSpace[0]][moveSpace[1]] != 17:
+                                newBoard = copy.deepcopy(self.board)
+                                newBoard[moveSpace[0]][moveSpace[1]] = newBoard[self.selected[0]][self.selected[1]]
+                                newBoard[self.selected[0]][self.selected[1]] = 0
+                                if self.whiteTurn:
+                                    checkForCheck = attacked_spaces(newBoard, False, False)
+                                    for space in checkForCheck:
+                                        if space[0] >= 0 and space[1] >= 0 and space[0] <= 7 and space[1] <= 7:
+                                            if newBoard[space[0]][space[1]] == 1:
+                                                self.selected = None
+                                                return
+                                else:
+                                    checkForCheck = attacked_spaces(newBoard, True, False)
+                                    for space in checkForCheck:
+                                        if space[0] >= 0 and space[1] >= 0 and space[0] <= 7 and space[1] <= 7:
+                                            if newBoard[space[0]][space[1]] == 17:
+                                                self.selected = None
+                                                return
+                                if (self.board[self.selected[0]][self.selected[1]] not in range(9, 17)
+                                        and self.board[self.selected[0]][self.selected[1]] not in range(25, 33)
+                                            and self.board[moveSpace[0]][moveSpace[1]] == 0):
+                                    FIFTYMOVECOUNTER += 1
+                                else:
+                                    FIFTYMOVECOUNTER = 0
+                                self.board[moveSpace[0]][moveSpace[1]] = self.board[self.selected[0]][self.selected[1]]
+                                MOVECOUNTER[self.board[self.selected[0]][self.selected[1]]] += 1
+                                self.board[self.selected[0]][self.selected[1]] = 0
+                                if len(REPITITION) < 6:
+                                    REPITITION.append(moveSpace)
+                                else:
+                                    REPITITION.pop(0)
+                                    REPITITION.append(moveSpace)
+                                self.change_turn()
                     self.selected = None
             else:
                 selectedSquare = select_square(mouse)
-                if self.activeBoard[selectedSquare[0]][selectedSquare[1]]:
+                if self.board[selectedSquare[0]][selectedSquare[1]]:
                     self.selected = selectedSquare
 
-    def check_checkmate_stalemate(self):
+    def check_checkmate_draw(self):
         originalSelected = self.selected
         if self.whiteTurn:
-            check, checkmate, stalemate = self.ccs_helper(False, range(2, 17))
+            check, checkmate, draw = self.ccd_helper(False, range(2, 17))
         else:
-            check, checkmate, stalemate = self.ccs_helper(True, range(18, 33))
+            check, checkmate, draw = self.ccd_helper(True, range(18, 33))
 
         self.selected = originalSelected
-        return check, checkmate, stalemate
+        return check, checkmate, draw
 
-    def ccs_helper(self, white, range_):
-        check, checkmate, stalemate = False, False, False
-        totalMoves = []
-        attackedSpaces = attacked_spaces(self.activeBoard, white, False)
-        for i in range(len(self.activeBoard)):
-            for j in range(len(self.activeBoard)):
-                if self.activeBoard[i][j] == 1 if not white else 17:
+    def ccd_helper(self, white, range_):
+        check, checkmate, draw = False, False, False
+        attackedSpaces = attacked_spaces(self.board, white, False)
+        for i in range(len(self.board)):
+            for j in range(len(self.board)):
+                if self.board[i][j] == 1 and not white:
                     king = (i, j)
-        kingMoves = valid_moves_king(king, self.activeBoard, self.activeBoard[king[0]][king[1]], True)
+                if self.board[i][j] == 17 and white:
+                    king = (i, j)
+        kingMoves = valid_moves_king(king, self.board, self.board[king[0]][king[1]], True)
         if king in attackedSpaces:
             check = True
             if not kingMoves:
                 checkmate = True
-                return check, checkmate, stalemate
+                return check, checkmate, draw
+        draw = self.check_draw(range_, kingMoves)
+
+        return check, checkmate, draw
+
+    def check_draw(self, range_, kingMoves):
+        totalMoves = []
+        draw = False
+        if FIFTYMOVECOUNTER == 100:
+            draw = True
+            return draw
+        if len(REPITITION) == 6:
+            if [REPITITION[0], REPITITION[1]] == [REPITITION[2], REPITITION[3]] == [REPITITION[4], REPITITION[5]]:
+                draw = True
+                return draw
         if not kingMoves:
             for i in range_:
-                for j in range(len(self.activeBoard)):
-                    for k in range(len(self.activeBoard)):
-                        if self.activeBoard[j][k] == i:
+                for j in range(len(self.board)):
+                    for k in range(len(self.board)):
+                        if self.board[j][k] == i:
                             self.selected = (j, k)
                             totalMoves += self.get_moves()
             if not totalMoves:
-                stalemate = True
-
-        return check, checkmate, stalemate
+                draw = True
+                return draw
+        pieces = []
+        for i in range(len(self.board)):
+            for j in range(len(self.board)):
+                if self.board[i][j]:
+                    pieces.append(self.board[i][j])
+        pieces.sort()
+        for scenario in INSUFFICIENTMATERIAL:
+            scenario.sort()
+            if pieces == scenario:
+                draw = True
+                return draw
+        return draw
 
 
 
@@ -195,7 +290,7 @@ def main():
     board = Board(START, userTurn)
 
     while True:
-        check, checkmate, stalemate = board.check_checkmate_stalemate()
+        check, checkmate, stalemate = board.check_checkmate_draw()
         if check:
             print("check")
         if checkmate:
