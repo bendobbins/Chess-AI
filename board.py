@@ -2,6 +2,8 @@ import pygame
 import sys
 import copy
 
+from pygame.constants import KEYDOWN, K_q
+
 from moves import valid_moves_pawn, valid_moves_knight, valid_moves_bishop, valid_moves_rook, valid_moves_queen, valid_moves_king, attacked_spaces
 
 pygame.init()
@@ -68,6 +70,9 @@ MOVECOUNTER = {}
 for i in range(1, 33):
     MOVECOUNTER[i] = 0
 
+UPGRADEPIECES = {pygame.K_q: 'q', pygame.K_r: 'r', pygame.K_b: 'b',
+               pygame.K_k: 'k', 'Q': 2, 'B': 3, 'K': 5, 'R': 7, 'q': 18, 'b': 19, 'k': 21, 'r': 23}
+
 # Combinations of pieces where game will be a stalemate if they are the only pieces left on the board and both players play optimally
 INSUFFICIENTMATERIAL = [
     [1, 17],
@@ -105,6 +110,22 @@ FIFTYMOVECOUNTER = 0
 # For tracking repetition stalemate
 REPETITION = []
 
+
+def draw_text(widths, heights, phrases, fonttypes, fontcolor):
+    """
+    Given information about text boxes to be drawn, this draws the text into the window.
+
+    widths -- List of integer x-axis placements in the window (one for each piece of text)
+    heights -- List of integer y-axis placements in the window (one for each piece of text)
+    phrases -- List of strings that are the text to be displayed
+    fonttypes -- List of fonts (one for each piece of text)
+    fontcolor -- RGB tuple of the foreground color of the text
+    """
+    for i in range(len(phrases)):
+        text = fonttypes[i].render(phrases[i], True, fontcolor)
+        textRect = text.get_rect()
+        textRect.center = (widths[i], heights[i])
+        DISPLAY.blit(text, textRect)
 
 def get_box_placement(x, y):
     """
@@ -222,10 +243,12 @@ class Board:
                     if moveSpace in possibleMoves:
                         # If the moveSpace is not a king (kings cannot be taken)
                         if self.board[moveSpace[0]][moveSpace[1]] != 1 and self.board[moveSpace[0]][moveSpace[1]] != 17:
+
                             # Create a copy of the board and simulate the move to see if it will put (or keep) the player's king in check
                             newBoard = copy.deepcopy(self.board)
                             newBoard[moveSpace[0]][moveSpace[1]] = newBoard[self.selected[0]][self.selected[1]]
                             newBoard[self.selected[0]][self.selected[1]] = 0
+                            # Get attacked spaces on new board
                             if self.whiteTurn:
                                 attackedSpaces = attacked_spaces(newBoard, False, False)
                             else:
@@ -243,6 +266,9 @@ class Board:
                                             self.selected = None
                                             return
 
+                            # Check if a pawn is moving to the last rank
+                            upgradePiece = self.check_pawn_upgrade(moveSpace)
+
                             # Fifty moves by each player without moving a pawn or taking a piece leads to draw
                             # Update FIFTYMOVECOUNTER accordingly
                             if (self.board[self.selected[0]][self.selected[1]] not in range(9, 17)
@@ -252,7 +278,15 @@ class Board:
                             else:
                                 FIFTYMOVECOUNTER = 0
 
-                            # Move is valid if function gets to this point, so execute move on real board
+                            # Change pawn if it is moving to last rank
+                            if upgradePiece:
+                                if self.whiteTurn:
+                                    newBoard[moveSpace[0]][moveSpace[1]] = UPGRADEPIECES[upgradePiece.upper()]
+                                else:
+                                    newBoard[moveSpace[0]][moveSpace[1]] = UPGRADEPIECES[upgradePiece]
+
+
+                            # Execute move on real board
                             MOVECOUNTER[self.board[self.selected[0]][self.selected[1]]] += 1
                             self.board = newBoard
 
@@ -265,8 +299,43 @@ class Board:
             else:
                 # Only select a square if there is a piece on it
                 selectedSquare = select_square(mouse)
-                if self.board[selectedSquare[0]][selectedSquare[1]]:
-                    self.selected = selectedSquare
+                if selectedSquare:
+                    if self.board[selectedSquare[0]][selectedSquare[1]]:
+                        self.selected = selectedSquare
+
+    def check_pawn_upgrade(self, moveSpace):
+        """
+        Given a space that a piece is moving to, check if the piece is a pawn and the
+        space is on the last rank. If both are true, prompt the user for which piece they
+        would like to upgrade to and return the first letter of that piece, else None.
+        """
+        def helper():
+            """
+            Draw a message prompting a user to click q, b, k or r and return the letter
+            when it is clicked.
+            """
+            while True:
+                for event in pygame.event.get():
+                    draw_text([WIDTH / 2], [HEIGHT - 40], ["Press q for Queen, r for Rook, b for Bishop, or k for Knight"], [SMALLFONT], LIGHTGREY)
+                    pygame.display.update()
+                    if event.type == KEYDOWN:
+                        for key in UPGRADEPIECES:
+                            if event.key == key:
+                                return UPGRADEPIECES[key]
+
+        # If white pawn is on last rank
+        if self.whiteTurn:
+            if self.board[self.selected[0]][self.selected[1]] in range(9, 17):
+                if moveSpace[1] == 0:
+                    return helper()
+
+        # If black pawn is on last rank
+        else:
+            if self.board[self.selected[0]][self.selected[1]] in range(25, 33):
+                if moveSpace[1] == 7:
+                    return helper()
+
+        return None
 
     def check_game_over(self):
         """
