@@ -2,152 +2,11 @@ import pygame
 import sys
 import copy
 
-from pygame.constants import KEYDOWN, K_q
-
-from moves import valid_moves_pawn, valid_moves_knight, valid_moves_bishop, valid_moves_rook, valid_moves_queen, valid_moves_king, attacked_spaces
+from moves import *
+from constants import *
+from helper import draw_text, select_square, get_box_placement
 
 pygame.init()
-pygame.font.init()
-
-# Window constants
-WIDTH = 650
-HEIGHT = 700
-BOXSIZE = 75
-FIELDSIZE = 8
-MARGIN = 25
-
-# Style constants
-WHITE = (255, 255, 255)
-BROWN = (95, 50, 15)
-LIGHTGREY = (225, 225, 225)
-RED = (245, 87, 87)
-BLACK = (0, 0, 0)
-LARGEFONT = pygame.font.SysFont("Courier", 30)
-BUTTONFONT = pygame.font.SysFont("Courier", 16)
-SMALLFONT = pygame.font.SysFont("Courier", 13)
-NUMBERFONT = pygame.font.SysFont("Helvetica", 30)
-
-# Window
-DISPLAY = pygame.display.set_mode((WIDTH, HEIGHT))
-
-# Starting chess board
-START = [
-    [23, 25, 0, 0, 0, 0, 9, 7],
-    [21, 26, 0, 0, 0, 0, 10, 5],
-    [19, 27, 0, 0, 0, 0, 11, 3],
-    [18, 28, 0, 0, 0, 0, 12, 2],
-    [17, 29, 0, 0, 0, 0, 13, 1],
-    [20, 30, 0, 0, 0, 0, 14, 4],
-    [22, 31, 0, 0, 0, 0, 15, 6],
-    [24, 32, 0, 0, 0, 0, 16, 8]
-]
-
-# Map pictures of pieces to their numerical equivalents on the START board
-PIECES = {}
-PIECES[1] = pygame.image.load("img/whiteKing.png").convert_alpha() 
-PIECES[2] = pygame.image.load("img/whiteQueen.png").convert_alpha()
-for i in range(3, 5):
-    PIECES[i] = pygame.image.load("img/whiteBishop.png").convert_alpha()
-for i in range(5, 7):
-    PIECES[i] = pygame.image.load("img/whiteKnight.png").convert_alpha()
-for i in range(7, 9):
-    PIECES[i] = pygame.image.load("img/whiteRook.png").convert_alpha()
-for i in range(9, 17):
-    PIECES[i] = pygame.image.load("img/whitePawn.png").convert_alpha()
-PIECES[17] = pygame.image.load("img/blackKing.png").convert_alpha()
-PIECES[18] = pygame.image.load("img/blackQueen.png").convert_alpha()
-for i in range(19, 21):
-    PIECES[i] = pygame.image.load("img/blackBishop.png").convert_alpha()
-for i  in range(21, 23):
-    PIECES[i] = pygame.image.load("img/blackKnight.png").convert_alpha()
-for i in range(23, 25):
-    PIECES[i] = pygame.image.load("img/blackRook.png").convert_alpha()
-for i in range(25, 33):
-    PIECES[i] = pygame.image.load("img/blackPawn.png").convert_alpha()
-
-# Mainly for telling whether pawns can move 2 spaces or not
-MOVECOUNTER = {}
-for i in range(1, 33):
-    MOVECOUNTER[i] = 0
-
-UPGRADEPIECES = {pygame.K_q: 'q', pygame.K_r: 'r', pygame.K_b: 'b',
-               pygame.K_k: 'k', 'Q': 2, 'B': 3, 'K': 5, 'R': 7, 'q': 18, 'b': 19, 'k': 21, 'r': 23}
-
-# Combinations of pieces where game will be a stalemate if they are the only pieces left on the board and both players play optimally
-INSUFFICIENTMATERIAL = [
-    [1, 17],
-    [1, 17, 5],
-    [1, 17, 6],
-    [1, 17, 3],
-    [1, 17, 4],
-    [1, 17, 19],
-    [1, 17, 20],
-    [1, 17, 21],
-    [1, 17, 22],
-    [1, 17, 21, 22],
-    [1, 17, 5, 6],
-    [1, 17, 3, 19],
-    [1, 17, 3, 20],
-    [1, 17, 3, 21],
-    [1, 17, 3, 22],
-    [1, 17, 4, 19],
-    [1, 17, 4, 20],
-    [1, 17, 4, 21],
-    [1, 17, 4, 22],
-    [1, 17, 5, 19],
-    [1, 17, 5, 20],
-    [1, 17, 5, 21],
-    [1, 17, 5, 22],
-    [1, 17, 6, 19],
-    [1, 17, 6, 20],
-    [1, 17, 6, 21],
-    [1, 17, 6, 22]
-]
-
-# For tracking 50 move rule stalemate
-FIFTYMOVECOUNTER = 0
-
-# For tracking repetition stalemate
-REPETITION = []
-
-
-def draw_text(widths, heights, phrases, fonttypes, fontcolor):
-    """
-    Given information about text boxes to be drawn, this draws the text into the window.
-
-    widths -- List of integer x-axis placements in the window (one for each piece of text)
-    heights -- List of integer y-axis placements in the window (one for each piece of text)
-    phrases -- List of strings that are the text to be displayed
-    fonttypes -- List of fonts (one for each piece of text)
-    fontcolor -- RGB tuple of the foreground color of the text
-    """
-    for i in range(len(phrases)):
-        text = fonttypes[i].render(phrases[i], True, fontcolor)
-        textRect = text.get_rect()
-        textRect.center = (widths[i], heights[i])
-        DISPLAY.blit(text, textRect)
-
-def get_box_placement(x, y):
-    """
-    Finds and returns the window coordinates for box (x, y) in the grid.
-    """
-    left = MARGIN + BOXSIZE * x 
-    top = MARGIN + BOXSIZE * y
-    return left, top
-
-
-def select_square(mouse):
-    """
-    Given the position of a mouse click, return a tuple of the square on the grid that was clicked, or None if no square was clicked.
-    """
-    for box_x in range(FIELDSIZE):
-        for box_y in range(FIELDSIZE):
-            left, top = get_box_placement(box_x, box_y)
-            box = pygame.Rect(left, top, BOXSIZE, BOXSIZE)
-            if box.collidepoint(mouse):
-                return (box_x, box_y)
-    return None
-
 
 
 class Board:
@@ -161,6 +20,7 @@ class Board:
         self.userTurn = userTurn
         self.whiteTurn = True
 
+
     def change_turn(self):
         """
         Change user turn and white turn.
@@ -173,6 +33,7 @@ class Board:
             self.whiteTurn = False
         else:
             self.whiteTurn = True
+
 
     def draw_board(self):
         """
@@ -188,6 +49,7 @@ class Board:
                 counter += 1
             counter += 1
 
+
     def draw_piece(self, space):
         """
         If the given space in the board has a piece on it, return the picture for that piece.
@@ -195,6 +57,7 @@ class Board:
         if self.board[space[0]][space[1]]:
             return PIECES[self.board[space[0]][space[1]]]
         return None
+
 
     def get_moves(self):
         """
@@ -213,6 +76,7 @@ class Board:
             return valid_moves_queen(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
         else:
             return valid_moves_king(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], True)
+
 
     def move_piece(self, mouse):
         """
@@ -303,6 +167,7 @@ class Board:
                     if self.board[selectedSquare[0]][selectedSquare[1]]:
                         self.selected = selectedSquare
 
+
     def check_pawn_upgrade(self, moveSpace):
         """
         Given a space that a piece is moving to, check if the piece is a pawn and the
@@ -318,7 +183,7 @@ class Board:
                 for event in pygame.event.get():
                     draw_text([WIDTH / 2], [HEIGHT - 40], ["Press q for Queen, r for Rook, b for Bishop, or k for Knight"], [SMALLFONT], LIGHTGREY)
                     pygame.display.update()
-                    if event.type == KEYDOWN:
+                    if event.type == pygame.KEYDOWN:
                         for key in UPGRADEPIECES:
                             if event.key == key:
                                 return UPGRADEPIECES[key]
@@ -337,6 +202,7 @@ class Board:
 
         return None
 
+
     def check_game_over(self):
         """
         Check if game ending conditions have been met (checkmate/stalemate).
@@ -351,6 +217,7 @@ class Board:
 
         self.selected = originalSelected
         return checkmate, draw
+
 
     def checkmate_draw(self, white, range_):
         """
@@ -379,6 +246,7 @@ class Board:
         draw = self.check_draw(range_, kingMoves)
 
         return checkmate, draw
+
 
     def check_checkmate(self, white, range_, king):
         """
@@ -412,6 +280,7 @@ class Board:
 
         # If all possible moves for all possible pieces are checked and the king is never not attacked, checkmate
         return True
+
 
     def check_draw(self, range_, kingMoves):
         """
