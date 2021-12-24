@@ -12,7 +12,7 @@ MARGIN = 25
 WHITE = (255, 255, 255)
 BROWN = (95, 50, 15)
 LIGHTGREY = (225, 225, 225)
-RED = (245, 87, 87)
+GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 LARGEFONT = pygame.font.SysFont("Courier", 30)
 BUTTONFONT = pygame.font.SysFont("Courier", 16)
@@ -107,3 +107,6 @@ FIFTYMOVECOUNTER = 0
 
 # For tracking repetition stalemate
 REPETITION = []
+
+# For enpassant
+LASTMOVE = []

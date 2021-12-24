@@ -46,6 +46,8 @@ class Board:
                 pygame.draw.rect(DISPLAY, BROWN if counter % 2 == 1 else WHITE, (left, top, BOXSIZE, BOXSIZE))
                 if self.draw_piece((box_x, box_y)):
                     DISPLAY.blit(self.draw_piece((box_x, box_y)), (left + 7, top + 5))
+                    if (box_x, box_y) == self.selected:
+                        pygame.draw.rect(DISPLAY, GREEN, (left, top, BOXSIZE, BOXSIZE), 2)
                 counter += 1
             counter += 1
 
@@ -96,49 +98,69 @@ class Board:
             return valid_moves_king(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], True)
 
 
+    def change_selected(self, moveSpace):
+        """
+        Change highlighting if moveSpace cannot be a valid move for the player.
+        """
+        if self.whiteTurn:
+            # Remove highlighting if click is outside grid, player tries to move piece for other color, or they click the same piece they have selected
+            if (not moveSpace or (self.board[self.selected[0]][self.selected[1]] in range(21, 41) and self.board[moveSpace[0]][moveSpace[1]] == 0) or
+                self.board[self.selected[0]][self.selected[1]] == self.board[moveSpace[0]][moveSpace[1]]):
+                self.selected = None
+                return True
+            # If player clicks same color piece as they have already selected, change highlighting to new piece
+            if self.board[moveSpace[0]][moveSpace[1]] in range(1, 21) or (self.board[self.selected[0]][self.selected[1]] in range(21, 41)
+                and self.board[moveSpace[0]][moveSpace[1]] in range(21, 41)):
+                self.selected = moveSpace
+                return True
+
+        else:
+            # Same as for white, but for black
+            if (not moveSpace or (self.board[self.selected[0]][self.selected[1]] in range(1, 21) and self.board[moveSpace[0]][moveSpace[1]] == 0) or
+                self.board[self.selected[0]][self.selected[1]] == self.board[moveSpace[0]][moveSpace[1]]):
+                self.selected = None
+                return True
+            if self.board[moveSpace[0]][moveSpace[1]] in range(21, 41) or (self.board[self.selected[0]][self.selected[1]] in range(1, 21)
+                and self.board[moveSpace[0]][moveSpace[1]] in range(1, 21)):
+                self.selected = moveSpace
+                return True
+        
+        return False
+
+
     def move_piece(self, mouse):
         """
         Given the position of a mouse click, select the square that was clicked on if self.selected is None, otherwise
         move the piece on the selected square to the clicked on square, if the move is valid.
         """
-        global FIFTYMOVECOUNTER, REPETITION
+        global FIFTYMOVECOUNTER, REPETITION, LASTMOVE
         if self.userTurn:
             if self.selected:
                 # Clicked on square becomes moveSpace if a square is already selected
                 moveSpace = select_square(mouse)
 
-                # Only allow piece movement for the color whose turn it is
-                if self.whiteTurn:
-                    if not moveSpace or self.board[self.selected[0]][self.selected[1]] in range(21, 41):
-                        self.selected = None
-                        return
-                else:
-                    if not moveSpace or self.board[self.selected[0]][self.selected[1]] in range(1, 21):
-                        self.selected = None
-                        return
+                # Only allow piece movement for the color whose turn it is and handle highlighting selected piece
+                if self.change_selected(moveSpace):
+                    return
 
                 # Check if player is castling
-                castle, kingside = self.castle(moveSpace)
+                castle = self.castle(moveSpace)
+                
+                # Check for en passant
+                en_passant = False
+                if LASTMOVE:
+                    if self.board[LASTMOVE[1][0]][LASTMOVE[1][1]] in range(9, 17) or self.board[LASTMOVE[1][0]][LASTMOVE[1][1]] in range(29, 37):
+                        en_passant = self.enpassant(moveSpace)
 
-                # If they are castling and it is valid
                 if castle:
-                    if self.whiteTurn:
-                        # White castles kingside
-                        if kingside:
-                            self.make_castle_move([(6, 7), (5, 7), (4, 7), (7, 7)], [1, 8])
-                        # White castles queenside
-                        else:
-                            self.make_castle_move([(2, 7), (3, 7), (4, 7), (0, 7)], [1, 7])
-
-                    else:
-                        # Black castles kingside
-                        if kingside:
-                            self.make_castle_move([(6, 0), (5, 0), (4, 0), (7, 0)], [21, 28])
-                        # Black castles queenside
-                        else:
-                            self.make_castle_move([(2, 0), (3, 0), (4, 0), (0, 0)], [21, 27])
-
+                    LASTMOVE = []
                     FIFTYMOVECOUNTER += 1
+                    REPETITION.append(copy.deepcopy(self.board))
+                    self.change_turn()
+
+                elif en_passant:
+                    LASTMOVE = [self.selected, moveSpace]
+                    FIFTYMOVECOUNTER = 0
                     REPETITION.append(copy.deepcopy(self.board))
                     self.change_turn()
 
@@ -198,11 +220,19 @@ class Board:
                                 MOVECOUNTER[self.board[self.selected[0]][self.selected[1]]] += 1
                                 self.board = newBoard
 
+                                # Keep track of last move for en passant
+                                LASTMOVE = [self.selected, moveSpace]
+
                                 # Keep track of all board positions and how many times they have repeated
                                 REPETITION.append(newBoard)
 
                                 self.change_turn()
-                self.selected = None
+
+                                self.selected = None                                #
+                                return                                              #
+                    self.selected = moveSpace                                       # Handle highlighting of pieces
+                    return                                                          #
+                self.selected = None                                                #
 
             else:
                 # Only select a square if there is a piece on it
@@ -210,6 +240,39 @@ class Board:
                 if selectedSquare:
                     if self.board[selectedSquare[0]][selectedSquare[1]]:
                         self.selected = selectedSquare
+    
+
+    def enpassant(self, moveSpace):
+        """
+        Check if the player is trying to do an en passant and if the conditions are correct for one.
+        If both are true, execute the move and return True. Else return False.
+        """
+        if self.whiteTurn:
+            # Check if last move was 2 spaces forward
+            if LASTMOVE[1][1] - LASTMOVE[0][1] == 2:
+                # Check if selected piece is next to pawn that just moved, and if selected piece is a pawn
+                if (self.selected == (LASTMOVE[1][0] + 1, LASTMOVE[1][1]) or self.selected == (LASTMOVE[1][0] - 1, LASTMOVE[1][1])
+                    and self.board[self.selected[0]][self.selected[1]] in range(9, 17)):
+                    # Check if the player is trying to en passant
+                    if moveSpace == (LASTMOVE[1][0], LASTMOVE[1][1] - 1):
+                        # Execute move
+                        self.board[moveSpace[0]][moveSpace[1]] = self.board[self.selected[0]][self.selected[1]]
+                        self.board[self.selected[0]][self.selected[1]] = 0
+                        self.board[LASTMOVE[1][0]][LASTMOVE[1][1]] = 0
+                        return True
+                        
+        else:
+            # Same as above
+            if LASTMOVE[0][1] - LASTMOVE[1][1] == 2:
+                if (self.selected == (LASTMOVE[1][0] + 1, LASTMOVE[1][1]) or self.selected == (LASTMOVE[1][0] - 1, LASTMOVE[1][1])
+                    and self.board[self.selected[0]][self.selected[1]] in range(29, 37)):
+                    if moveSpace == (LASTMOVE[1][0], LASTMOVE[1][1] + 1):
+                        self.board[moveSpace[0]][moveSpace[1]] = self.board[self.selected[0]][self.selected[1]]
+                        self.board[self.selected[0]][self.selected[1]] = 0
+                        self.board[LASTMOVE[1][0]][LASTMOVE[1][1]] = 0
+                        return True
+        
+        return False
 
 
     def make_castle_move(self, spaces, kingNRook):
@@ -229,36 +292,40 @@ class Board:
     def castle(self, moveSpace):
         """
         Given a space clicked on by a player, determine if the player is trying to castle, and if so,
-        whether or not the castle is valid. Returns 2 bools, the first indicating a valid castle and the
-        second indicating kingside or queenside.
+        whether or not the castle is valid. If both are true, make the castle move and return True.
+        Else return False.
         """
         if self.whiteTurn:
             if self.board[self.selected[0]][self.selected[1]] == 1:
 
-                # Check white castle kingside
+                # White castle kingside
                 if moveSpace == (6, 7):
                     if self.castle_valid([(6, 7), (5, 7), (4, 7)], [1, 8], False, False):
-                        return True, True
+                        self.make_castle_move([(6, 7), (5, 7), (4, 7), (7, 7)], [1, 8])
+                        return True
 
-                # Check white castle queenside
+                # White castle queenside
                 if moveSpace == (2, 7):
                     if self.castle_valid([(1, 7), (2, 7), (3, 7), (4, 7)], [1, 7], True, False):
-                        return True, False
+                        self.make_castle_move([(2, 7), (3, 7), (4, 7), (0, 7)], [1, 7])
+                        return True
         
         else:
             if self.board[self.selected[0]][self.selected[1]] == 21:
 
-                # Check black castle kingside
+                # Black castle kingside
                 if moveSpace == (6, 0):
                     if self.castle_valid([(6, 0), (5, 0), (4, 0)], [21, 28], False, True):
-                        return True, True
+                        self.make_castle_move([(6, 0), (5, 0), (4, 0), (7, 0)], [21, 28])
+                        return True
 
-                # Check black castle kingside
+                # Black castle kingside
                 elif moveSpace == (2, 0):
                     if self.castle_valid([(1, 0), (2, 0), (3, 0), (4, 0)], [21, 27], True, True):
-                        return True, False
+                        self.make_castle_move([(2, 0), (3, 0), (4, 0), (0, 0)], [21, 27])
+                        return True
         
-        return False, None
+        return False
 
 
     def castle_valid(self, spaces, kingNRook, queen, whiteAttacking):
