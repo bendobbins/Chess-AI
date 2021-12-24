@@ -24,14 +24,14 @@ DISPLAY = pygame.display.set_mode((WIDTH, HEIGHT))
 
 # Starting chess board
 START = [
-    [23, 25, 0, 0, 0, 0, 9, 7],
-    [21, 26, 0, 0, 0, 0, 10, 5],
-    [19, 27, 0, 0, 0, 0, 11, 3],
-    [18, 28, 0, 0, 0, 0, 12, 2],
-    [17, 29, 0, 0, 0, 0, 13, 1],
-    [20, 30, 0, 0, 0, 0, 14, 4],
-    [22, 31, 0, 0, 0, 0, 15, 6],
-    [24, 32, 0, 0, 0, 0, 16, 8]
+    [27, 29, 0, 0, 0, 0, 9, 7],
+    [25, 30, 0, 0, 0, 0, 10, 5],
+    [23, 31, 0, 0, 0, 0, 11, 3],
+    [22, 32, 0, 0, 0, 0, 12, 2],
+    [21, 33, 0, 0, 0, 0, 13, 1],
+    [24, 34, 0, 0, 0, 0, 14, 4],
+    [26, 35, 0, 0, 0, 0, 15, 6],
+    [28, 36, 0, 0, 0, 0, 16, 8]
 ]
 
 # Map pictures of pieces to their numerical equivalents on the START board
@@ -46,54 +46,60 @@ for i in range(7, 9):
     PIECES[i] = pygame.image.load("img/whiteRook.png").convert_alpha()
 for i in range(9, 17):
     PIECES[i] = pygame.image.load("img/whitePawn.png").convert_alpha()
-PIECES[17] = pygame.image.load("img/blackKing.png").convert_alpha()
-PIECES[18] = pygame.image.load("img/blackQueen.png").convert_alpha()
-for i in range(19, 21):
-    PIECES[i] = pygame.image.load("img/blackBishop.png").convert_alpha()
-for i  in range(21, 23):
-    PIECES[i] = pygame.image.load("img/blackKnight.png").convert_alpha()
+PIECES[21] = pygame.image.load("img/blackKing.png").convert_alpha()
+PIECES[22] = pygame.image.load("img/blackQueen.png").convert_alpha()
 for i in range(23, 25):
+    PIECES[i] = pygame.image.load("img/blackBishop.png").convert_alpha()
+for i  in range(25, 27):
+    PIECES[i] = pygame.image.load("img/blackKnight.png").convert_alpha()
+for i in range(27, 29):
     PIECES[i] = pygame.image.load("img/blackRook.png").convert_alpha()
-for i in range(25, 33):
+for i in range(29, 37):
     PIECES[i] = pygame.image.load("img/blackPawn.png").convert_alpha()
+extraPieces = [2, 3, 5, 7, 22, 23, 25, 27]
+for i in range(17, 21):
+    PIECES[i] = PIECES[extraPieces.pop(0)]
+for i in range(37, 41):
+    PIECES[i] = PIECES[extraPieces.pop(0)]
 
 # Mainly for telling whether pawns can move 2 spaces or not
 MOVECOUNTER = {}
-for i in range(1, 33):
+for i in range(1, 41):
     MOVECOUNTER[i] = 0
 
-UPGRADEPIECES = {pygame.K_q: 'q', pygame.K_r: 'r', pygame.K_b: 'b',
-               pygame.K_k: 'k', 'Q': 2, 'B': 3, 'K': 5, 'R': 7, 'q': 18, 'b': 19, 'k': 21, 'r': 23}
+# Dictionary to handle upgrading pawns when they reach the last rank
+UPGRADEPIECES = {pygame.K_q: 'q', pygame.K_r: 'r', pygame.K_b: 'b', pygame.K_k: 'k', 
+                'Q': 17, 'B': 18, 'K': 19, 'R': 20, 'q': 37, 'b': 38, 'k': 39, 'r': 40}
 
 # Combinations of pieces where game will be a stalemate if they are the only pieces left on the board and both players play optimally
 INSUFFICIENTMATERIAL = [
-    [1, 17],
-    [1, 17, 5],
-    [1, 17, 6],
-    [1, 17, 3],
-    [1, 17, 4],
-    [1, 17, 19],
-    [1, 17, 20],
-    [1, 17, 21],
-    [1, 17, 22],
-    [1, 17, 21, 22],
-    [1, 17, 5, 6],
-    [1, 17, 3, 19],
-    [1, 17, 3, 20],
-    [1, 17, 3, 21],
-    [1, 17, 3, 22],
-    [1, 17, 4, 19],
-    [1, 17, 4, 20],
-    [1, 17, 4, 21],
-    [1, 17, 4, 22],
-    [1, 17, 5, 19],
-    [1, 17, 5, 20],
-    [1, 17, 5, 21],
-    [1, 17, 5, 22],
-    [1, 17, 6, 19],
-    [1, 17, 6, 20],
-    [1, 17, 6, 21],
-    [1, 17, 6, 22]
+    [1, 21],
+    [1, 21, 3],
+    [1, 21, 4],
+    [1, 21, 5],
+    [1, 21, 6],
+    [1, 21, 23],
+    [1, 21, 24],
+    [1, 21, 25],
+    [1, 21, 26],
+    [1, 21, 5, 6],
+    [1, 21, 25, 26],
+    [1, 21, 3, 23],
+    [1, 21, 3, 24],
+    [1, 21, 3, 25],
+    [1, 21, 3, 26],
+    [1, 21, 4, 23],
+    [1, 21, 4, 24],
+    [1, 21, 4, 25],
+    [1, 21, 4, 26],
+    [1, 21, 5, 23],
+    [1, 21, 5, 24],
+    [1, 21, 5, 25],
+    [1, 21, 5, 26],
+    [1, 21, 6, 23],
+    [1, 21, 6, 24],
+    [1, 21, 6, 25],
+    [1, 21, 6, 26]
 ]
 
 # For tracking 50 move rule stalemate

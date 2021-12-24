@@ -64,16 +64,34 @@ class Board:
         Returns all possible moves for the piece that is on the currently selected square in the form of a list of tuples where each
         tuple is a possible square to move to.
         """
-        if self.board[self.selected[0]][self.selected[1]] in range(9, 17) or self.board[self.selected[0]][self.selected[1]] in range(25, 33):
+        if (self.board[self.selected[0]][self.selected[1]] in range(9, 17)
+            or self.board[self.selected[0]][self.selected[1]] in range(29, 37)):
             return valid_moves_pawn(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], MOVECOUNTER[self.board[self.selected[0]][self.selected[1]]])
-        elif self.board[self.selected[0]][self.selected[1]] in range(5, 7) or self.board[self.selected[0]][self.selected[1]] in range(21, 23):
+
+        elif (self.board[self.selected[0]][self.selected[1]] in range(5, 7)
+            or self.board[self.selected[0]][self.selected[1]] in range(25, 27)
+                or self.board[self.selected[0]][self.selected[1]] == 19
+                    or self.board[self.selected[0]][self.selected[1]] == 39):
             return valid_moves_knight(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
-        elif self.board[self.selected[0]][self.selected[1]] in range(3, 5) or self.board[self.selected[0]][self.selected[1]] in range(19, 21):
+
+        elif (self.board[self.selected[0]][self.selected[1]] in range(3, 5)
+            or self.board[self.selected[0]][self.selected[1]] in range(23, 25)
+                or self.board[self.selected[0]][self.selected[1]] == 18
+                    or self.board[self.selected[0]][self.selected[1]] == 38):
             return valid_moves_bishop(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
-        elif self.board[self.selected[0]][self.selected[1]] in range(7, 9) or self.board[self.selected[0]][self.selected[1]] in range(23, 25):
+
+        elif (self.board[self.selected[0]][self.selected[1]] in range(7, 9)
+            or self.board[self.selected[0]][self.selected[1]] in range(27, 29)
+                or self.board[self.selected[0]][self.selected[1]] == 20
+                    or self.board[self.selected[0]][self.selected[1]] == 40):
             return valid_moves_rook(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
-        elif self.board[self.selected[0]][self.selected[1]] == 2 or self.board[self.selected[0]][self.selected[1]] == 18:
+
+        elif (self.board[self.selected[0]][self.selected[1]] == 2
+            or self.board[self.selected[0]][self.selected[1]] == 22
+                or self.board[self.selected[0]][self.selected[1]] == 17
+                    or self.board[self.selected[0]][self.selected[1]] == 37):
             return valid_moves_queen(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
+
         else:
             return valid_moves_king(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], True)
 
@@ -91,73 +109,99 @@ class Board:
 
                 # Only allow piece movement for the color whose turn it is
                 if self.whiteTurn:
-                    if not moveSpace or self.board[self.selected[0]][self.selected[1]] in range(17, 33):
+                    if not moveSpace or self.board[self.selected[0]][self.selected[1]] in range(21, 41):
                         self.selected = None
                         return
                 else:
-                    if not moveSpace or self.board[self.selected[0]][self.selected[1]] in range(1, 17):
+                    if not moveSpace or self.board[self.selected[0]][self.selected[1]] in range(1, 21):
                         self.selected = None
                         return
 
-                # Get the possible moves for the piece in the currently selected square
-                possibleMoves = self.get_moves()
+                # Check if player is castling
+                castle, kingside = self.castle(moveSpace)
 
-                if possibleMoves:
-                    # If the moveSpace is a possible move for the piece in the currently selected square
-                    if moveSpace in possibleMoves:
-                        # If the moveSpace is not a king (kings cannot be taken)
-                        if self.board[moveSpace[0]][moveSpace[1]] != 1 and self.board[moveSpace[0]][moveSpace[1]] != 17:
+                # If they are castling and it is valid
+                if castle:
+                    if self.whiteTurn:
+                        # White castles kingside
+                        if kingside:
+                            self.make_castle_move([(6, 7), (5, 7), (4, 7), (7, 7)], [1, 8])
+                        # White castles queenside
+                        else:
+                            self.make_castle_move([(2, 7), (3, 7), (4, 7), (0, 7)], [1, 7])
 
-                            # Create a copy of the board and simulate the move to see if it will put (or keep) the player's king in check
-                            newBoard = copy.deepcopy(self.board)
-                            newBoard[moveSpace[0]][moveSpace[1]] = newBoard[self.selected[0]][self.selected[1]]
-                            newBoard[self.selected[0]][self.selected[1]] = 0
-                            # Get attacked spaces on new board
-                            if self.whiteTurn:
-                                attackedSpaces = attacked_spaces(newBoard, False, False)
-                            else:
-                                attackedSpaces = attacked_spaces(newBoard, True, False)
-                            for space in attackedSpaces:
-                                if space[0] >= 0 and space[1] >= 0 and space[0] <= 7 and space[1] <= 7:
-                                    if self.whiteTurn:
-                                        # If king is attacked after move, cancel move and set selected to None
-                                        if newBoard[space[0]][space[1]] == 1:
-                                            self.selected = None
-                                            return
-                                    else:
-                                        # Same as above
-                                        if newBoard[space[0]][space[1]] == 17:
-                                            self.selected = None
-                                            return
+                    else:
+                        # Black castles kingside
+                        if kingside:
+                            self.make_castle_move([(6, 0), (5, 0), (4, 0), (7, 0)], [21, 28])
+                        # Black castles queenside
+                        else:
+                            self.make_castle_move([(2, 0), (3, 0), (4, 0), (0, 0)], [21, 27])
 
-                            # Check if a pawn is moving to the last rank
-                            upgradePiece = self.check_pawn_upgrade(moveSpace)
+                    FIFTYMOVECOUNTER += 1
+                    REPETITION.append(copy.deepcopy(self.board))
+                    self.change_turn()
 
-                            # Fifty moves by each player without moving a pawn or taking a piece leads to draw
-                            # Update FIFTYMOVECOUNTER accordingly
-                            if (self.board[self.selected[0]][self.selected[1]] not in range(9, 17)
-                                    and self.board[self.selected[0]][self.selected[1]] not in range(25, 33)
-                                        and self.board[moveSpace[0]][moveSpace[1]] == 0):
-                                FIFTYMOVECOUNTER += 1
-                            else:
-                                FIFTYMOVECOUNTER = 0
+                else:
+                    # Get the possible moves for the piece in the currently selected square
+                    possibleMoves = self.get_moves()
 
-                            # Change pawn if it is moving to last rank
-                            if upgradePiece:
+                    if possibleMoves:
+                        # If the moveSpace is a possible move for the piece in the currently selected square
+                        if moveSpace in possibleMoves:
+                            # If the moveSpace is not a king (kings cannot be taken)
+                            if self.board[moveSpace[0]][moveSpace[1]] != 1 and self.board[moveSpace[0]][moveSpace[1]] != 21:
+
+                                # Create a copy of the board and simulate the move to see if it will put (or keep) the player's king in check
+                                newBoard = copy.deepcopy(self.board)
+                                newBoard[moveSpace[0]][moveSpace[1]] = newBoard[self.selected[0]][self.selected[1]]
+                                newBoard[self.selected[0]][self.selected[1]] = 0
+                                # Get attacked spaces on new board
                                 if self.whiteTurn:
-                                    newBoard[moveSpace[0]][moveSpace[1]] = UPGRADEPIECES[upgradePiece.upper()]
+                                    attacked = attacked_spaces(newBoard, False, False)
                                 else:
-                                    newBoard[moveSpace[0]][moveSpace[1]] = UPGRADEPIECES[upgradePiece]
+                                    attacked = attacked_spaces(newBoard, True, False)
+                                for space in attacked:
+                                    if space[0] >= 0 and space[1] >= 0 and space[0] <= 7 and space[1] <= 7:
+                                        if self.whiteTurn:
+                                            # If king is attacked after move, cancel move and set selected to None
+                                            if newBoard[space[0]][space[1]] == 1:
+                                                self.selected = None
+                                                return
+                                        else:
+                                            # Same as above
+                                            if newBoard[space[0]][space[1]] == 21:
+                                                self.selected = None
+                                                return
+
+                                # Check if a pawn is moving to the last rank
+                                upgradePiece = self.check_pawn_upgrade(moveSpace)
+
+                                # Fifty moves by each player without moving a pawn or taking a piece leads to draw
+                                # Update FIFTYMOVECOUNTER accordingly
+                                if (self.board[self.selected[0]][self.selected[1]] not in range(9, 17)
+                                        and self.board[self.selected[0]][self.selected[1]] not in range(29, 37)
+                                            and self.board[moveSpace[0]][moveSpace[1]] == 0):
+                                    FIFTYMOVECOUNTER += 1
+                                else:
+                                    FIFTYMOVECOUNTER = 0
+
+                                # Change pawn if it is moving to last rank
+                                if upgradePiece:
+                                    if self.whiteTurn:
+                                        newBoard[moveSpace[0]][moveSpace[1]] = UPGRADEPIECES[upgradePiece.upper()]
+                                    else:
+                                        newBoard[moveSpace[0]][moveSpace[1]] = UPGRADEPIECES[upgradePiece]
 
 
-                            # Execute move on real board
-                            MOVECOUNTER[self.board[self.selected[0]][self.selected[1]]] += 1
-                            self.board = newBoard
+                                # Execute move on real board
+                                MOVECOUNTER[self.board[self.selected[0]][self.selected[1]]] += 1
+                                self.board = newBoard
 
-                            # Keep track of all board positions and how many times they have repeated
-                            REPETITION.append(newBoard)
+                                # Keep track of all board positions and how many times they have repeated
+                                REPETITION.append(newBoard)
 
-                            self.change_turn()
+                                self.change_turn()
                 self.selected = None
 
             else:
@@ -166,6 +210,84 @@ class Board:
                 if selectedSquare:
                     if self.board[selectedSquare[0]][selectedSquare[1]]:
                         self.selected = selectedSquare
+
+
+    def make_castle_move(self, spaces, kingNRook):
+        """
+        Given a list of spaces and a list of integers representing king and rook, move the pieces so that
+        the player castles. First two tuples in spaces should be squares king and rook are moving to respectively,
+        and last two should be spaces they are moving from. First value in kingNRook should be king, second should be rook.
+        """
+        self.board[spaces[0][0]][spaces[0][1]] = kingNRook[0]
+        self.board[spaces[1][0]][spaces[1][1]] = kingNRook[1]
+        self.board[spaces[2][0]][spaces[2][1]] = 0
+        self.board[spaces[3][0]][spaces[3][1]] = 0
+        MOVECOUNTER[kingNRook[0]] += 1
+        MOVECOUNTER[kingNRook[1]] += 1
+
+
+    def castle(self, moveSpace):
+        """
+        Given a space clicked on by a player, determine if the player is trying to castle, and if so,
+        whether or not the castle is valid. Returns 2 bools, the first indicating a valid castle and the
+        second indicating kingside or queenside.
+        """
+        if self.whiteTurn:
+            if self.board[self.selected[0]][self.selected[1]] == 1:
+
+                # Check white castle kingside
+                if moveSpace == (6, 7):
+                    if self.castle_valid([(6, 7), (5, 7), (4, 7)], [1, 8], False, False):
+                        return True, True
+
+                # Check white castle queenside
+                if moveSpace == (2, 7):
+                    if self.castle_valid([(1, 7), (2, 7), (3, 7), (4, 7)], [1, 7], True, False):
+                        return True, False
+        
+        else:
+            if self.board[self.selected[0]][self.selected[1]] == 21:
+
+                # Check black castle kingside
+                if moveSpace == (6, 0):
+                    if self.castle_valid([(6, 0), (5, 0), (4, 0)], [21, 28], False, True):
+                        return True, True
+
+                # Check black castle kingside
+                elif moveSpace == (2, 0):
+                    if self.castle_valid([(1, 0), (2, 0), (3, 0), (4, 0)], [21, 27], True, True):
+                        return True, False
+        
+        return False, None
+
+
+    def castle_valid(self, spaces, kingNRook, queen, whiteAttacking):
+        """
+        Given a series of variables that help analyze whether a castle is valid, return True if the castle is
+        valid and False if not.
+
+        spaces -- List of tuples representing spaces that either must be empty or not attacked for castle to be valid\n
+        kingNRook -- List of 2 integers where one represents the appropriate king and the other represents the appropriate rook\n
+        queen -- Bool representing whether the castle is queenside or kingside\n
+        whiteAttacking -- Bool representing whether to find spaces attacked by white or black\n
+        """
+        if MOVECOUNTER[kingNRook[0]] == 0 and MOVECOUNTER[kingNRook[1]] == 0:
+
+            if not queen:
+                if self.board[spaces[0][0]][spaces[0][1]] == 0 and self.board[spaces[1][0]][spaces[1][1]] == 0:
+                    attacked = attacked_spaces(self.board, whiteAttacking, False)
+                    if spaces[0] not in attacked and spaces[1] not in attacked and spaces[2] not in attacked:
+                        return True
+
+            else:
+                if (self.board[spaces[0][0]][spaces[0][1]] == 0 
+                    and self.board[spaces[1][0]][spaces[1][1]] == 0 
+                        and self.board[spaces[2][0]][spaces[2][1]] == 0):
+                    attacked = attacked_spaces(self.board, whiteAttacking, False)
+                    if spaces[3] not in attacked and spaces[2] not in attacked and spaces[1] not in attacked:
+                        return True
+
+        return False
 
 
     def check_pawn_upgrade(self, moveSpace):
@@ -196,7 +318,7 @@ class Board:
 
         # If black pawn is on last rank
         else:
-            if self.board[self.selected[0]][self.selected[1]] in range(25, 33):
+            if self.board[self.selected[0]][self.selected[1]] in range(29, 37):
                 if moveSpace[1] == 7:
                     return helper()
 
@@ -211,9 +333,9 @@ class Board:
         originalSelected = self.selected
 
         if self.whiteTurn:
-            checkmate, draw = self.checkmate_draw(False, range(2, 17))
+            checkmate, draw = self.checkmate_draw(False, range(2, 21))
         else:
-            checkmate, draw = self.checkmate_draw(True, range(18, 33))
+            checkmate, draw = self.checkmate_draw(True, range(22, 41))
 
         self.selected = originalSelected
         return checkmate, draw
@@ -226,20 +348,20 @@ class Board:
         """
         checkmate, draw = False, False
         # Get spaces being attacked by white if white is true, else get spaces attacked by black
-        attackedSpaces = attacked_spaces(self.board, white, False)
+        attacked = attacked_spaces(self.board, white, False)
 
         # Find king for color whose turn it is
         for i in range(len(self.board)):
             for j in range(len(self.board)):
                 if self.board[i][j] == 1 and not white:
                     king = (i, j)
-                if self.board[i][j] == 17 and white:
+                if self.board[i][j] == 21 and white:
                     king = (i, j)
 
         kingMoves = valid_moves_king(king, self.board, self.board[king[0]][king[1]], True)
 
         # If the king is being attacked and has no valid moves, check for checkmate
-        if king in attackedSpaces and not kingMoves:
+        if king in attacked and not kingMoves:
             checkmate = self.check_checkmate(white, range_, king)
 
         # Check for draw
@@ -272,10 +394,10 @@ class Board:
                             newBoard[self.selected[0]][self.selected[1]] = 0
 
                             # Check if the king is still being attacked after the move
-                            attackedSpaces = attacked_spaces(newBoard, white, False)
+                            attacked = attacked_spaces(newBoard, white, False)
 
                             # If the king is not being attacked after some move, then there is a possible move and no checkmate
-                            if king not in attackedSpaces:
+                            if king not in attacked:
                                 return False
 
         # If all possible moves for all possible pieces are checked and the king is never not attacked, checkmate

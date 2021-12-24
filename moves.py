@@ -3,16 +3,16 @@ import operator
 def valid_moves_pawn(start, board, piece, moveCounter):
     """
     Given a starting space, a chess board, the type of piece and the amount of times that piece has moved,
-    return a list of tuples where each tuple is a possible space for the piece to move.
+    return a list of tuples where each tuple is a possible space for a pawn to move.
 
-    start -- Tuple of the space the piece starts from
-    board -- List of lists representing a chess board and its pieces
-    piece -- Integer representing a type of chess piece
-    moveCounter -- Integer representing how many times a piece has moved
+    start -- Tuple of the space the piece starts from\n
+    board -- List of lists representing a chess board and its pieces\n
+    piece -- Integer representing a type of chess piece\n
+    moveCounter -- Integer representing how many times a piece has moved\n
     """
     moveList = []
     # Black piece
-    if piece in range(17, 33):
+    if piece in range(21, 41):
         # Check pawn attack moves
         moveList = check_pawn_move(board, (start[0] + 1, start[1] + 1), moveList, False)
         if start[0] != 0:
@@ -50,10 +50,10 @@ def check_pawn_move(board, space, moveList, white):
     try:
         # If there is a piece to attack in the space, add the space to the list
         if white:
-            if board[space[0]][space[1]] in range(17, 33):
+            if board[space[0]][space[1]] in range(21, 41):
                 moveList.append((space[0], space[1]))
         else:
-            if board[space[0]][space[1]] in range(1, 17):
+            if board[space[0]][space[1]] in range(1, 21):
                 moveList.append((space[0], space[1]))
     
     # If move is out of board
@@ -67,12 +67,12 @@ def check_pawn_move(board, space, moveList, white):
 def valid_moves_knight(start, board, piece, checkProtected):
     """
     Given a starting space, a chess board, the type of piece and a bool for whether to include squares with 
-    friendly pieces, return a list of tuples where each tuple is a possible space for the piece to move.
+    friendly pieces, return a list of tuples where each tuple is a possible space for a knight to move.
 
-    start -- Tuple of the space the piece starts from
-    board -- List of lists representing a chess board and its pieces
-    piece -- Integer representing a type of chess piece
-    checkProtected -- Bool for whether to include spaces occupied by friendly pieces
+    start -- Tuple of the space the piece starts from\n
+    board -- List of lists representing a chess board and its pieces\n
+    piece -- Integer representing a type of chess piece\n
+    checkProtected -- Bool for whether to include spaces occupied by friendly pieces\n
     """
     moveList = []
     # List of all possible moves for a knight
@@ -89,7 +89,7 @@ def valid_moves_knight(start, board, piece, checkProtected):
 
     for move in possibleMoves:
         # Black
-        if piece in range(17, 33):
+        if piece in range(21, 41):
             moveList = check_knight_move(board, move, moveList, False, checkProtected)
         # White
         else:
@@ -109,10 +109,10 @@ def check_knight_move(board, space, moveList, white, checkProtected):
     # Only add empty spaces and spaces with enemies
     if not checkProtected:
         if white:
-            if board[space[0]][space[1]] == 0 or board[space[0]][space[1]] in range(17, 33):
+            if board[space[0]][space[1]] == 0 or board[space[0]][space[1]] in range(21, 41):
                 moveList.append((space[0], space[1]))
         else:
-            if board[space[0]][space[1]] in range(0, 17):
+            if board[space[0]][space[1]] in range(0, 21):
                 moveList.append((space[0], space[1]))
 
     # Add any valid space
@@ -126,12 +126,12 @@ def check_knight_move(board, space, moveList, white, checkProtected):
 def valid_moves_bishop(start, board, piece, checkProtected):
     """
     Given a starting space, a chess board, the type of piece and a bool for whether to include squares with 
-    friendly pieces, return a list of tuples where each tuple is a possible space for the piece to move.
+    friendly pieces, return a list of tuples where each tuple is a possible space for a bishop to move.
 
-    start -- Tuple of the space the piece starts from
-    board -- List of lists representing a chess board and its pieces
-    piece -- Integer representing a type of chess piece
-    checkProtected -- Bool for whether to include spaces occupied by friendly pieces
+    start -- Tuple of the space the piece starts from\n
+    board -- List of lists representing a chess board and its pieces\n
+    piece -- Integer representing a type of chess piece\n
+    checkProtected -- Bool for whether to include spaces occupied by friendly pieces\n
     """
     moveList = []
     # Directions that a bishop can move in
@@ -155,26 +155,26 @@ def valid_moves_bishop(start, board, piece, checkProtected):
             # Only consider spaces with enemies
             if not checkProtected:
                 # Black
-                if piece in range(17, 33):
+                if piece in range(21, 41):
                     # If piece is friendly, don't add to list and move to next direction since bishop can't move further
-                    if board[space[0]][space[1]] in range(17, 33):
+                    if board[space[0]][space[1]] in range(21, 41):
                         break
                     # If piece is enemy, add to list and move to next direction since bishop can't move further
-                    elif board[space[0]][space[1]] in range(1, 17):
+                    elif board[space[0]][space[1]] in range(1, 21):
                         moveList.append(space)     
                         break
                 # White
                 else:
                     # Same as above
-                    if board[space[0]][space[1]] in range(1, 17):
+                    if board[space[0]][space[1]] in range(1, 21):
                         break
-                    elif board[space[0]][space[1]] in range(17, 33):
+                    elif board[space[0]][space[1]] in range(21, 41):
                         moveList.append(space)     
                         break
 
             # Consider spaces with friendlies and enemies
             else:
-                if board[space[0]][space[1]] in range(1, 33):
+                if board[space[0]][space[1]] in range(1, 41):
                     moveList.append(space)     
                     break
 
@@ -189,12 +189,12 @@ def valid_moves_bishop(start, board, piece, checkProtected):
 def valid_moves_rook(start, board, piece, checkProtected):
     """
     Given a starting space, a chess board, the type of piece and a bool for whether to include squares with 
-    friendly pieces, return a list of tuples where each tuple is a possible space for the piece to move.
+    friendly pieces, return a list of tuples where each tuple is a possible space for a rook to move.
 
-    start -- Tuple of the space the piece starts from
-    board -- List of lists representing a chess board and its pieces
-    piece -- Integer representing a type of chess piece
-    checkProtected -- Bool for whether to include spaces occupied by friendly pieces
+    start -- Tuple of the space the piece starts from\n
+    board -- List of lists representing a chess board and its pieces\n
+    piece -- Integer representing a type of chess piece\n
+    checkProtected -- Bool for whether to include spaces occupied by friendly pieces\n
     """
     moveList = []
     # Start[0]: starting row
@@ -209,14 +209,14 @@ def check_rook_direction(dynamic, static, operation, dynamic_column, moveList, p
     """
     Add all possible spaces to move to in a column or row to a list and return the list.
 
-    dynamic -- Integer representing row or column to be changed to check for valid spaces
-    static -- Integer representing row or column to stay the same while dynamic is being changed (so that only movements in one NSEW direction are checked)
-    operation -- Operator that will be used to change dynamic
-    dynamic_column -- Bool representing whether dynamic is a column or row
-    moveList -- List of possible moves for piece
-    piece -- Integer representing a type of chess piece
-    board -- List of lists representing a chess board
-    checkProtected -- Bool for whether to include spaces with friendly pieces as possible moves
+    dynamic -- Integer representing row or column to be changed to check for valid spaces\n
+    static -- Integer representing row or column to stay the same while dynamic is being changed (so that only movements in one NSEW direction are checked)\n
+    operation -- Operator that will be used to change dynamic\n
+    dynamic_column -- Bool representing whether dynamic is a column or row\n
+    moveList -- List of possible moves for piece\n
+    piece -- Integer representing a type of chess piece\n
+    board -- List of lists representing a chess board\n
+    checkProtected -- Bool for whether to include spaces with friendly pieces as possible moves\n
     """
     for i in range(1, 9):
 
@@ -233,25 +233,25 @@ def check_rook_direction(dynamic, static, operation, dynamic_column, moveList, p
         # Only consider enemy spaces
         if not checkProtected:
             # Black
-            if piece in range(17, 33):
+            if piece in range(21, 41):
                 # Same idea as bishop
-                if board[space[0]][space[1]] in range(17, 33):
+                if board[space[0]][space[1]] in range(21, 41):
                     return moveList
-                elif board[space[0]][space[1]] in range(1, 17):
+                elif board[space[0]][space[1]] in range(1, 21):
                     moveList.append(space)
                     return moveList
             # White
             else:
                 # Same idea as bishop
-                if board[space[0]][space[1]] in range(1, 17):
+                if board[space[0]][space[1]] in range(1, 21):
                     return moveList
-                elif board[space[0]][space[1]] in range(17, 33):
+                elif board[space[0]][space[1]] in range(21, 41):
                     moveList.append(space)
                     return moveList
         
         # Consider all occupied spaces
         else:
-            if board[space[0]][space[1]] in range(1, 33):
+            if board[space[0]][space[1]] in range(1, 41):
                 moveList.append(space)
                 return moveList
     
@@ -266,12 +266,12 @@ def check_rook_direction(dynamic, static, operation, dynamic_column, moveList, p
 def valid_moves_queen(start, board, piece, checkProtected):
     """
     Given a starting space, a chess board, the type of piece and a bool for whether to include squares with 
-    friendly pieces, return a list of tuples where each tuple is a possible space for the piece to move.
+    friendly pieces, return a list of tuples where each tuple is a possible space for a queen to move.
 
-    start -- Tuple of the space the piece starts from
-    board -- List of lists representing a chess board and its pieces
-    piece -- Integer representing a type of chess piece
-    checkProtected -- Bool for whether to include spaces occupied by friendly pieces
+    start -- Tuple of the space the piece starts from\n
+    board -- List of lists representing a chess board and its pieces\n
+    piece -- Integer representing a type of chess piece\n
+    checkProtected -- Bool for whether to include spaces occupied by friendly pieces\n
     """
     moveList = []
     # Queen is just bishop + rook
@@ -284,12 +284,12 @@ def valid_moves_queen(start, board, piece, checkProtected):
 def valid_moves_king(start, board, piece, checkProtected):
     """
     Given a starting space, a chess board, the type of piece and a bool for whether to include squares with 
-    friendly pieces, return a list of tuples where each tuple is a possible space for the piece to move.
+    friendly pieces, return a list of tuples where each tuple is a possible space for a king to move.
 
-    start -- Tuple of the space the piece starts from
-    board -- List of lists representing a chess board and its pieces
-    piece -- Integer representing a type of chess piece
-    checkProtected -- Bool for whether to include spaces occupied by friendly pieces
+    start -- Tuple of the space the piece starts from\n
+    board -- List of lists representing a chess board and its pieces\n
+    piece -- Integer representing a type of chess piece\n
+    checkProtected -- Bool for whether to include spaces occupied by friendly pieces\n
     """
     # All possible moves for a king
     moveList = [
@@ -305,7 +305,7 @@ def valid_moves_king(start, board, piece, checkProtected):
     invalidMoves = []
 
     # All spaces attacked by the other color are invalid moves for a king
-    if piece == 17:
+    if piece == 21:
         invalidMoves += attacked_spaces(board, True, checkProtected)
     else:
         invalidMoves += attacked_spaces(board, False, checkProtected)
@@ -317,11 +317,11 @@ def valid_moves_king(start, board, piece, checkProtected):
             continue
 
         # Squares with black pieces are invalid for black king, vice versa for white
-        if piece == 17:
-            if board[move[0]][move[1]] in range(18, 33):
+        if piece == 21:
+            if board[move[0]][move[1]] in range(22, 41):
                 invalidMoves.append(move)
         else:
-            if board[move[0]][move[1]] in range(2, 17):
+            if board[move[0]][move[1]] in range(2, 21):
                 invalidMoves.append(move)
 
     # Remove all possible moves that are invalid
@@ -364,31 +364,33 @@ def attacked_spaces(board, white, checkProtected):
             if white:
                 if board[i][j] in range(9, 17):
                     attacked += pawn_attacks((i, j), True)
-                elif board[i][j] in range(7, 9):
+                elif board[i][j] in range(7, 9) or board[i][j] == 20:
                     attacked += valid_moves_rook((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] in range(5, 7):
+                elif board[i][j] in range(5, 7) or board[i][j] == 19:
                     attacked += valid_moves_knight((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] in range(3, 5):
+                elif board[i][j] in range(3, 5) or board[i][j] == 18:
                     attacked += valid_moves_bishop((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] == 2:
+                elif board[i][j] == 2 or board[i][j] == 17:
                     attacked += valid_moves_queen((i, j), board, board[i][j], checkProtected)
                 # Append all possible king moves since board boundaries don't really matter for finding attacked spaces
                 elif board[i][j] == 1:
-                    attacked += [(i, j + 1), (i, j - 1), (i - 1, j), (i + 1, j), (i + 1, j - 1), (i + 1, j + 1), (i - 1, j + 1), (i - 1, j - 1)]
+                    attacked += [(i, j + 1), (i, j - 1), (i - 1, j), (i + 1, j), (i + 1, j - 1),
+                                    (i + 1, j + 1), (i - 1, j + 1), (i - 1, j - 1)]
 
             # Find all squares attacked by black
             else:
-                if board[i][j] in range(25, 33):
+                if board[i][j] in range(29, 37):
                     attacked += pawn_attacks((i, j), False)
-                elif board[i][j] in range(23, 25):
+                elif board[i][j] in range(27, 29) or board[i][j] == 40:
                     attacked += valid_moves_rook((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] in range(21, 23):
+                elif board[i][j] in range(25, 27) or board[i][j] == 39:
                     attacked += valid_moves_knight((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] in range(19, 21):
+                elif board[i][j] in range(23, 25) or board[i][j] == 38:
                     attacked += valid_moves_bishop((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] == 18:
+                elif board[i][j] == 22 or board[i][j] == 37:
                     attacked += valid_moves_queen((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] == 17:
-                    attacked += [(i, j + 1), (i, j - 1), (i - 1, j), (i + 1, j), (i + 1, j - 1), (i + 1, j + 1), (i - 1, j + 1), (i - 1, j - 1)]
+                elif board[i][j] == 21:
+                    attacked += [(i, j + 1), (i, j - 1), (i - 1, j), (i + 1, j), (i + 1, j - 1),
+                                    (i + 1, j + 1), (i - 1, j + 1), (i - 1, j - 1)]
     
     return attacked
