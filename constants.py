@@ -13,11 +13,11 @@ WHITE = (255, 255, 255)
 BROWN = (95, 50, 15)
 LIGHTGREY = (225, 225, 225)
 GREEN = (0, 255, 0)
+RED = (255, 0, 0)
 BLACK = (0, 0, 0)
 LARGEFONT = pygame.font.SysFont("Courier", 30)
-BUTTONFONT = pygame.font.SysFont("Courier", 16)
 SMALLFONT = pygame.font.SysFont("Courier", 13)
-NUMBERFONT = pygame.font.SysFont("Helvetica", 30)
+NUMBERFONT = pygame.font.SysFont("Helvetica", 20)
 
 # Window
 DISPLAY = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -110,3 +110,12 @@ REPETITION = []
 
 # For enpassant
 LASTMOVE = []
+
+# For markings on side of board
+BOARDNUMBERS = ['8', '7', '6', '5', '4', '3', '2', '1']
+BOARDLETTERS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+BOARDWIDTHS = [62.5, 137.5, 212.5, 287.5, 362.5, 437.5, 512.5, 587.5]
+BOARDHEIGHTS = [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5]
+NUMBERWIDTHS = [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5]
+NUMBERHEIGHTS = [62.5, 137.5, 212.5, 287.5, 362.5, 437.5, 512.5, 587.5]
+NUMBERFONTS = [NUMBERFONT, NUMBERFONT, NUMBERFONT, NUMBERFONT, NUMBERFONT, NUMBERFONT, NUMBERFONT, NUMBERFONT]

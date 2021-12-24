@@ -2,9 +2,11 @@ import pygame
 import sys
 import copy
 
+from pygame import draw
+
 from moves import *
 from constants import *
-from helper import draw_text, select_square, get_box_placement
+from helper import draw_text, select_square, get_box_placement, draw_buttons, start_page
 
 pygame.init()
 
@@ -14,9 +16,9 @@ class Board:
     Creates chess board with pieces and handles piece movement as well as win conditions.
     """
     
-    def __init__(self, board, userTurn):
+    def __init__(self, userTurn):
         self.selected = None
-        self.board = board
+        self.board = START
         self.userTurn = userTurn
         self.whiteTurn = True
 
@@ -370,7 +372,7 @@ class Board:
             """
             while True:
                 for event in pygame.event.get():
-                    draw_text([WIDTH / 2], [HEIGHT - 40], ["Press q for Queen, r for Rook, b for Bishop, or k for Knight"], [SMALLFONT], LIGHTGREY)
+                    draw_text([WIDTH / 2], [HEIGHT - 55], ["Press q for Queen, r for Rook, b for Bishop, or k for Knight"], [SMALLFONT], LIGHTGREY)
                     pygame.display.update()
                     if event.type == pygame.KEYDOWN:
                         for key in UPGRADEPIECES:
@@ -515,6 +517,20 @@ class Board:
         return False
 
 
+    def reset(self, userTurn):
+        global FIFTYMOVECOUNTER, REPETITION, LASTMOVE, MOVECOUNTER
+        self.selected = None
+        self.board = START
+        self.userTurn = userTurn
+        self.whiteTurn = True
+        for i in range(1, 41):
+            MOVECOUNTER[i] = 0
+        FIFTYMOVECOUNTER = 0
+        REPETITION = []
+        LASTMOVE = []
+
+
+
 
 def main():
     """
@@ -522,22 +538,63 @@ def main():
     """
     pygame.display.set_caption("Chess")
     userTurn = True
-    board = Board(START, userTurn)
+    board = Board(userTurn)
+    aiGame = None
+
+    def game_over(checkmate):
+        """
+        For stopping gameplay and waiting for reset or quit when game end condition is met.
+        """
+        while True:
+            for event in pygame.event.get():
+                if checkmate:
+                    draw_text([WIDTH / 2], [HEIGHT - 55], ["Checkmate!"], [NUMBERFONT], GREEN)
+                else:
+                    draw_text([WIDTH / 2], [HEIGHT - 55], ["Draw"], [NUMBERFONT], RED)
+                pygame.display.update()
+                if event.type == pygame.QUIT:
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if reset.collidepoint(event.pos):
+                        board.reset(userTurn)
+                        return
 
     while True:
-        checkmate, stalemate = board.check_game_over()
-        if checkmate:
-            print("checkmate")
-        if stalemate:
-            print("stalemate")
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+        if aiGame is None:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit()
+
+            DISPLAY.fill(BLACK)
+
+            gameButtons = start_page()
+            click, _, _ = pygame.mouse.get_pressed()
+            if click == 1:
                 mouse = pygame.mouse.get_pos()
-                board.move_piece(mouse)
-        DISPLAY.fill(BLACK)
-        board.draw_board()
+                if gameButtons[0].collidepoint(mouse):
+                    aiGame = False
+                elif gameButtons[1].collidepoint(mouse):
+                    aiGame = True 
+
+        else:
+            checkmate, stalemate = board.check_game_over()
+            if checkmate:
+                game_over(True)
+            if stalemate:
+                game_over(False)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if reset.collidepoint(event.pos):
+                        board.reset(userTurn)
+                    mouse = pygame.mouse.get_pos()
+                    board.move_piece(mouse)
+            DISPLAY.fill(BLACK)
+            draw_text(NUMBERWIDTHS, NUMBERHEIGHTS, BOARDNUMBERS, NUMBERFONTS, LIGHTGREY)
+            draw_text(BOARDWIDTHS, BOARDHEIGHTS, BOARDLETTERS, NUMBERFONTS, LIGHTGREY)
+            reset = draw_buttons([WIDTH / 2 - 30], [HEIGHT - 40], 60, 30, ["Reset"], LIGHTGREY, BLACK)[0]
+            board.draw_board()
         pygame.display.update()
 
 
