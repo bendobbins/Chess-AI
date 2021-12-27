@@ -48,6 +48,7 @@ class Board:
                 pygame.draw.rect(DISPLAY, BROWN if counter % 2 == 1 else WHITE, (left, top, BOXSIZE, BOXSIZE))
                 if self.draw_piece((box_x, box_y)):
                     DISPLAY.blit(self.draw_piece((box_x, box_y)), (left + 7, top + 5))
+                    # Outline selected square
                     if (box_x, box_y) == self.selected:
                         pygame.draw.rect(DISPLAY, GREEN, (left, top, BOXSIZE, BOXSIZE), 2)
                 counter += 1
@@ -230,12 +231,15 @@ class Board:
 
                                 self.change_turn()
 
+                                # Remove highlighting if move successful
                                 self.selected = None                                #
                                 return                                              #
+                    # Highlight clicked on piece if it is not a possible move       #
                     self.selected = moveSpace                                       # Handle highlighting of pieces
                     return                                                          #
                 self.selected = None                                                #
 
+            # If there is no square already selected
             else:
                 # Only select a square if there is a piece on it
                 selectedSquare = select_square(mouse)
@@ -277,39 +281,72 @@ class Board:
         return False
 
 
-    def make_castle_move(self, spaces, kingNRook):
-        """
-        Given a list of spaces and a list of integers representing king and rook, move the pieces so that
-        the player castles. First two tuples in spaces should be squares king and rook are moving to respectively,
-        and last two should be spaces they are moving from. First value in kingNRook should be king, second should be rook.
-        """
-        self.board[spaces[0][0]][spaces[0][1]] = kingNRook[0]
-        self.board[spaces[1][0]][spaces[1][1]] = kingNRook[1]
-        self.board[spaces[2][0]][spaces[2][1]] = 0
-        self.board[spaces[3][0]][spaces[3][1]] = 0
-        MOVECOUNTER[kingNRook[0]] += 1
-        MOVECOUNTER[kingNRook[1]] += 1
-
-
     def castle(self, moveSpace):
         """
         Given a space clicked on by a player, determine if the player is trying to castle, and if so,
         whether or not the castle is valid. If both are true, make the castle move and return True.
         Else return False.
         """
+
+        def make_castle_move(spaces, kingNRook):
+            """
+            Given a list of spaces and a list of integers representing king and rook, move the pieces so that
+            the player castles. First two tuples in spaces should be squares king and rook are moving to respectively,
+            and last two should be spaces they are moving from. First value in kingNRook should be king, second should be rook.
+            """
+            self.board[spaces[0][0]][spaces[0][1]] = kingNRook[0]
+            self.board[spaces[1][0]][spaces[1][1]] = kingNRook[1]
+            self.board[spaces[2][0]][spaces[2][1]] = 0
+            self.board[spaces[3][0]][spaces[3][1]] = 0
+            MOVECOUNTER[kingNRook[0]] += 1
+            MOVECOUNTER[kingNRook[1]] += 1
+
+        def castle_valid(spaces, kingNRook, queen, whiteAttacking):
+            """
+            Given a series of variables that help analyze whether a castle is valid, return True if the castle is
+            valid and False if not.
+
+            spaces -- List of tuples representing spaces that either must be empty or not attacked for castle to be valid\n
+            kingNRook -- List of 2 integers where one represents the appropriate king and the other represents the appropriate rook\n
+            queen -- Bool representing whether the castle is queenside or kingside\n
+            whiteAttacking -- Bool representing whether to find spaces attacked by white or black\n
+            """
+            # Check if king and rook have not moved
+            if MOVECOUNTER[kingNRook[0]] == 0 and MOVECOUNTER[kingNRook[1]] == 0:
+
+                if not queen:
+                    # Check if spaces between king and rook are empty
+                    if self.board[spaces[0][0]][spaces[0][1]] == 0 and self.board[spaces[1][0]][spaces[1][1]] == 0:
+                        attacked = attacked_spaces(self.board, whiteAttacking, False)
+                        # If king and spaces where king moves through are not attacked, castle is valid
+                        if spaces[0] not in attacked and spaces[1] not in attacked and spaces[2] not in attacked:
+                            return True
+
+                else:
+                    # Same as above, just for different spaces
+                    if (self.board[spaces[0][0]][spaces[0][1]] == 0 
+                        and self.board[spaces[1][0]][spaces[1][1]] == 0 
+                            and self.board[spaces[2][0]][spaces[2][1]] == 0):
+                        attacked = attacked_spaces(self.board, whiteAttacking, False)
+                        if spaces[3] not in attacked and spaces[2] not in attacked and spaces[1] not in attacked:
+                            return True
+
+            return False
+
+        # castle()
         if self.whiteTurn:
             if self.board[self.selected[0]][self.selected[1]] == 1:
 
                 # White castle kingside
                 if moveSpace == (6, 7):
-                    if self.castle_valid([(6, 7), (5, 7), (4, 7)], [1, 8], False, False):
-                        self.make_castle_move([(6, 7), (5, 7), (4, 7), (7, 7)], [1, 8])
+                    if castle_valid([(6, 7), (5, 7), (4, 7)], [1, 8], False, False):
+                        make_castle_move([(6, 7), (5, 7), (4, 7), (7, 7)], [1, 8])
                         return True
 
                 # White castle queenside
                 if moveSpace == (2, 7):
-                    if self.castle_valid([(1, 7), (2, 7), (3, 7), (4, 7)], [1, 7], True, False):
-                        self.make_castle_move([(2, 7), (3, 7), (4, 7), (0, 7)], [1, 7])
+                    if castle_valid([(1, 7), (2, 7), (3, 7), (4, 7)], [1, 7], True, False):
+                        make_castle_move([(2, 7), (3, 7), (4, 7), (0, 7)], [1, 7])
                         return True
         
         else:
@@ -317,45 +354,16 @@ class Board:
 
                 # Black castle kingside
                 if moveSpace == (6, 0):
-                    if self.castle_valid([(6, 0), (5, 0), (4, 0)], [21, 28], False, True):
-                        self.make_castle_move([(6, 0), (5, 0), (4, 0), (7, 0)], [21, 28])
+                    if castle_valid([(6, 0), (5, 0), (4, 0)], [21, 28], False, True):
+                        make_castle_move([(6, 0), (5, 0), (4, 0), (7, 0)], [21, 28])
                         return True
 
                 # Black castle kingside
                 elif moveSpace == (2, 0):
-                    if self.castle_valid([(1, 0), (2, 0), (3, 0), (4, 0)], [21, 27], True, True):
-                        self.make_castle_move([(2, 0), (3, 0), (4, 0), (0, 0)], [21, 27])
+                    if castle_valid([(1, 0), (2, 0), (3, 0), (4, 0)], [21, 27], True, True):
+                        make_castle_move([(2, 0), (3, 0), (4, 0), (0, 0)], [21, 27])
                         return True
         
-        return False
-
-
-    def castle_valid(self, spaces, kingNRook, queen, whiteAttacking):
-        """
-        Given a series of variables that help analyze whether a castle is valid, return True if the castle is
-        valid and False if not.
-
-        spaces -- List of tuples representing spaces that either must be empty or not attacked for castle to be valid\n
-        kingNRook -- List of 2 integers where one represents the appropriate king and the other represents the appropriate rook\n
-        queen -- Bool representing whether the castle is queenside or kingside\n
-        whiteAttacking -- Bool representing whether to find spaces attacked by white or black\n
-        """
-        if MOVECOUNTER[kingNRook[0]] == 0 and MOVECOUNTER[kingNRook[1]] == 0:
-
-            if not queen:
-                if self.board[spaces[0][0]][spaces[0][1]] == 0 and self.board[spaces[1][0]][spaces[1][1]] == 0:
-                    attacked = attacked_spaces(self.board, whiteAttacking, False)
-                    if spaces[0] not in attacked and spaces[1] not in attacked and spaces[2] not in attacked:
-                        return True
-
-            else:
-                if (self.board[spaces[0][0]][spaces[0][1]] == 0 
-                    and self.board[spaces[1][0]][spaces[1][1]] == 0 
-                        and self.board[spaces[2][0]][spaces[2][1]] == 0):
-                    attacked = attacked_spaces(self.board, whiteAttacking, False)
-                    if spaces[3] not in attacked and spaces[2] not in attacked and spaces[1] not in attacked:
-                        return True
-
         return False
 
 
@@ -518,6 +526,9 @@ class Board:
 
 
     def reset(self, userTurn):
+        """
+        Reset board and globals keeping track of moves.
+        """
         global FIFTYMOVECOUNTER, REPETITION, LASTMOVE, MOVECOUNTER
         self.selected = None
         self.board = START
@@ -560,6 +571,7 @@ def main():
                         return
 
     while True:
+        # Display start page
         if aiGame is None:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -567,6 +579,7 @@ def main():
 
             DISPLAY.fill(BLACK)
 
+            # Wait for user to choose game mode
             gameButtons = start_page()
             click, _, _ = pygame.mouse.get_pressed()
             if click == 1:
@@ -576,12 +589,16 @@ def main():
                 elif gameButtons[1].collidepoint(mouse):
                     aiGame = True 
 
+        # Display chess board
         else:
+            # Check for ending conditions
             checkmate, stalemate = board.check_game_over()
             if checkmate:
                 game_over(True)
             if stalemate:
                 game_over(False)
+
+            # Check for moves or selections
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
@@ -590,11 +607,14 @@ def main():
                         board.reset(userTurn)
                     mouse = pygame.mouse.get_pos()
                     board.move_piece(mouse)
+
+            # Draw board
             DISPLAY.fill(BLACK)
             draw_text(NUMBERWIDTHS, NUMBERHEIGHTS, BOARDNUMBERS, NUMBERFONTS, LIGHTGREY)
             draw_text(BOARDWIDTHS, BOARDHEIGHTS, BOARDLETTERS, NUMBERFONTS, LIGHTGREY)
             reset = draw_buttons([WIDTH / 2 - 30], [HEIGHT - 40], 60, 30, ["Reset"], LIGHTGREY, BLACK)[0]
             board.draw_board()
+
         pygame.display.update()
 
 
