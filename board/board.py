@@ -2,8 +2,6 @@ import pygame
 import sys
 import copy
 
-from pygame import draw
-
 from moves import *
 from constants import *
 from helper import draw_text, select_square, get_box_placement, draw_buttons, start_page
@@ -69,36 +67,58 @@ class Board:
         Returns all possible moves for the piece that is on the currently selected square in the form of a list of tuples where each
         tuple is a possible square to move to.
         """
+        # Create board object that can be passed to C
+        for i in range(8):
+            for j in range(8):
+                cboard[i][j] = self.board[i][j]
+
         if (self.board[self.selected[0]][self.selected[1]] in range(9, 17)
             or self.board[self.selected[0]][self.selected[1]] in range(29, 37)):
-            return valid_moves_pawn(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], MOVECOUNTER[self.board[self.selected[0]][self.selected[1]]])
+            return self.reference_to_space(engine.valid_pawn_moves(cmove(*self.selected), cboard, self.board[self.selected[0]][self.selected[1]], MOVECOUNTER[self.board[self.selected[0]][self.selected[1]]]))
+            #return valid_moves_pawn(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], MOVECOUNTER[self.board[self.selected[0]][self.selected[1]]])
 
         elif (self.board[self.selected[0]][self.selected[1]] in range(5, 7)
             or self.board[self.selected[0]][self.selected[1]] in range(25, 27)
                 or self.board[self.selected[0]][self.selected[1]] == 19
                     or self.board[self.selected[0]][self.selected[1]] == 39):
-            return valid_moves_knight(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
+            return self.reference_to_space(engine.valid_knight_moves(cmove(*self.selected), cboard, self.board[self.selected[0]][self.selected[1]], False))
+            #return valid_moves_knight(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
 
         elif (self.board[self.selected[0]][self.selected[1]] in range(3, 5)
             or self.board[self.selected[0]][self.selected[1]] in range(23, 25)
                 or self.board[self.selected[0]][self.selected[1]] == 18
                     or self.board[self.selected[0]][self.selected[1]] == 38):
-            return valid_moves_bishop(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
+            return self.reference_to_space(engine.valid_bishop_moves(cmove(*self.selected), cboard, self.board[self.selected[0]][self.selected[1]], False))
+            #return valid_moves_bishop(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
 
         elif (self.board[self.selected[0]][self.selected[1]] in range(7, 9)
             or self.board[self.selected[0]][self.selected[1]] in range(27, 29)
                 or self.board[self.selected[0]][self.selected[1]] == 20
                     or self.board[self.selected[0]][self.selected[1]] == 40):
-            return valid_moves_rook(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
+            return self.reference_to_space(engine.valid_rook_moves(cmove(*self.selected), cboard, self.board[self.selected[0]][self.selected[1]], False))
+            #return valid_moves_rook(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
 
         elif (self.board[self.selected[0]][self.selected[1]] == 2
             or self.board[self.selected[0]][self.selected[1]] == 22
                 or self.board[self.selected[0]][self.selected[1]] == 17
                     or self.board[self.selected[0]][self.selected[1]] == 37):
-            return valid_moves_queen(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
+            return self.reference_to_space(engine.valid_queen_moves(cmove(*self.selected), cboard, self.board[self.selected[0]][self.selected[1]], False))
+            #return valid_moves_queen(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], False)
 
         else:
-            return valid_moves_king(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], True)
+            return self.reference_to_space(engine.valid_king_moves(cmove(*self.selected), cboard, self.board[self.selected[0]][self.selected[1]], True))
+            #return valid_moves_king(self.selected, self.board, self.board[self.selected[0]][self.selected[1]], True)
+
+
+    def reference_to_space(self, references):
+        moves = []
+        if references[0]:
+            for i in range(1, references[0] + 1):
+                moves.append(REFERENCES[references[i]])
+
+        engine.free_array(references)
+        
+        return moves
 
 
     def change_selected(self, moveSpace):
@@ -181,11 +201,18 @@ class Board:
                                 newBoard = copy.deepcopy(self.board)
                                 newBoard[moveSpace[0]][moveSpace[1]] = newBoard[self.selected[0]][self.selected[1]]
                                 newBoard[self.selected[0]][self.selected[1]] = 0
+
+                                # Create board object that can be passed to C
+                                for i in range(8):
+                                    for j in range(8):
+                                        cboard[i][j] = newBoard[i][j]
                                 # Get attacked spaces on new board
                                 if self.whiteTurn:
-                                    attacked = attacked_spaces(newBoard, False, False)
+                                    attacked = self.reference_to_space(engine.attacked_spaces(cboard, False, False))
+                                    #attacked = attacked_spaces(newBoard, False, False)
                                 else:
-                                    attacked = attacked_spaces(newBoard, True, False)
+                                    attacked = self.reference_to_space(engine.attacked_spaces(cboard, True, False))
+                                    #attacked = attacked_spaces(newBoard, True, False)
                                 for space in attacked:
                                     if space[0] >= 0 and space[1] >= 0 and space[0] <= 7 and space[1] <= 7:
                                         if self.whiteTurn:
@@ -287,6 +314,11 @@ class Board:
         whether or not the castle is valid. If both are true, make the castle move and return True.
         Else return False.
         """
+        cspacesk = (ctypes.c_int * 2 * 3)()
+        cspacesq = (ctypes.c_int * 2 * 4)()
+        for i in range(8):
+            for j in range(8):
+                cboard[i][j] = self.board[i][j]
 
         def make_castle_move(spaces, kingNRook):
             """
@@ -313,11 +345,16 @@ class Board:
             """
             # Check if king and rook have not moved
             if MOVECOUNTER[kingNRook[0]] == 0 and MOVECOUNTER[kingNRook[1]] == 0:
+                for i in range(8):
+                    for j in range(8):
+                        cboard[i][j] = self.board[i][j]
 
                 if not queen:
                     # Check if spaces between king and rook are empty
                     if self.board[spaces[0][0]][spaces[0][1]] == 0 and self.board[spaces[1][0]][spaces[1][1]] == 0:
-                        attacked = attacked_spaces(self.board, whiteAttacking, False)
+                        attacked = self.reference_to_space(engine.attacked_spaces(cboard, whiteAttacking, False))
+                        #attacked = attacked_spaces(self.board, whiteAttacking, False)
+
                         # If king and spaces where king moves through are not attacked, castle is valid
                         if spaces[0] not in attacked and spaces[1] not in attacked and spaces[2] not in attacked:
                             return True
@@ -327,7 +364,8 @@ class Board:
                     if (self.board[spaces[0][0]][spaces[0][1]] == 0 
                         and self.board[spaces[1][0]][spaces[1][1]] == 0 
                             and self.board[spaces[2][0]][spaces[2][1]] == 0):
-                        attacked = attacked_spaces(self.board, whiteAttacking, False)
+                        attacked = self.reference_to_space(engine.attacked_spaces(cboard, whiteAttacking, False))
+                        #attacked = attacked_spaces(self.board, whiteAttacking, False)
                         if spaces[3] not in attacked and spaces[2] not in attacked and spaces[1] not in attacked:
                             return True
 
@@ -340,12 +378,22 @@ class Board:
                 # White castle kingside
                 if moveSpace == (6, 7):
                     if castle_valid([(6, 7), (5, 7), (4, 7)], [1, 8], False, False):
+                    #spaces = [(6, 7), (5, 7), (4, 7)]
+                    #for i in range(3):
+                    #    for j in range(2):
+                    #        cspacesk[i][j] = spaces[i][j]
+                    #if engine.castle_valid(cspacesk, cboard, cmove(*[1, 8]), False, False, cmove(*[MOVECOUNTER[1], MOVECOUNTER[8]])):
                         make_castle_move([(6, 7), (5, 7), (4, 7), (7, 7)], [1, 8])
                         return True
 
                 # White castle queenside
                 if moveSpace == (2, 7):
                     if castle_valid([(1, 7), (2, 7), (3, 7), (4, 7)], [1, 7], True, False):
+                    #spaces = [(2, 7), (3, 7), (4, 7), (0, 7)]
+                    #for i in range(4):
+                    #    for j in range(2):
+                    #        cspacesq[i][j] = spaces[i][j]
+                    #if engine.castle_valid(cspacesq, cboard, cmove(*[1, 7]), True, False, cmove(*[MOVECOUNTER[1], MOVECOUNTER[7]])):
                         make_castle_move([(2, 7), (3, 7), (4, 7), (0, 7)], [1, 7])
                         return True
         
@@ -355,12 +403,22 @@ class Board:
                 # Black castle kingside
                 if moveSpace == (6, 0):
                     if castle_valid([(6, 0), (5, 0), (4, 0)], [21, 28], False, True):
+                    #spaces = [(6, 0), (5, 0), (4, 0)]
+                    #for i in range(3):
+                    #    for j in range(2):
+                    #        cspacesk[i][j] = spaces[i][j]
+                    #if engine.castle_valid(cspacesk, cboard, cmove(*[21, 28]), False, True, cmove(*[MOVECOUNTER[21], MOVECOUNTER[28]])):
                         make_castle_move([(6, 0), (5, 0), (4, 0), (7, 0)], [21, 28])
                         return True
 
                 # Black castle kingside
                 elif moveSpace == (2, 0):
                     if castle_valid([(1, 0), (2, 0), (3, 0), (4, 0)], [21, 27], True, True):
+                    #spaces = [(2, 0), (3, 0), (4, 0), (0, 0)]
+                    #for i in range(4):
+                    #    for j in range(2):
+                    #        cspacesq[i][j] = spaces[i][j]
+                    #if engine.castle_valid(cspacesq, cboard, cmove(*[21, 27]), True, True, cmove(*[MOVECOUNTER[21], MOVECOUNTER[27]])):
                         make_castle_move([(2, 0), (3, 0), (4, 0), (0, 0)], [21, 27])
                         return True
         
@@ -408,46 +466,57 @@ class Board:
         Return bools for each conditions.
         """
         originalSelected = self.selected
+        for i in range(8):
+            for j in range(8):
+                cboard[i][j] = self.board[i][j]
 
         if self.whiteTurn:
-            checkmate, draw = self.checkmate_draw(False, range(2, 21))
+            checkmate, draw = self._checkmate_draw(False, range(2, 21))
+            #checkmate = engine.checkmate(cboard, False, cmove(*[2, 21]), ccounter(*MOVECOUNTER))
         else:
-            checkmate, draw = self.checkmate_draw(True, range(22, 41))
+            checkmate, draw = self._checkmate_draw(True, range(22, 41))
+            #checkmate = engine.checkmate(cboard, True, cmove(*[22, 41]), ccounter(*MOVECOUNTER))
 
         self.selected = originalSelected
         return checkmate, draw
 
 
-    def checkmate_draw(self, white, range_):
+    def _checkmate_draw(self, whiteAttacking, range_):
         """
         Given a bool indicating which color to get attacked spaces for and a range of pieces for the color whose turn it is,
         return bools for checkmate or stalemate against the color whose turn it is.
         """
         checkmate, draw = False, False
+
+        for i in range(8):
+            for j in range(8):
+                cboard[i][j] = self.board[i][j]
         # Get spaces being attacked by white if white is true, else get spaces attacked by black
-        attacked = attacked_spaces(self.board, white, False)
+        attacked = self.reference_to_space(engine.attacked_spaces(cboard, whiteAttacking, False))
+        #attacked = attacked_spaces(self.board, white, False)
 
         # Find king for color whose turn it is
         for i in range(len(self.board)):
             for j in range(len(self.board)):
-                if self.board[i][j] == 1 and not white:
+                if self.board[i][j] == 1 and not whiteAttacking:
                     king = (i, j)
-                if self.board[i][j] == 21 and white:
+                if self.board[i][j] == 21 and whiteAttacking:
                     king = (i, j)
 
-        kingMoves = valid_moves_king(king, self.board, self.board[king[0]][king[1]], True)
+        kingMoves = self.reference_to_space(engine.valid_king_moves(cmove(*king), cboard, self.board[king[0]][king[1]], True))
+        #kingMoves = valid_moves_king(king, self.board, self.board[king[0]][king[1]], True)
 
         # If the king is being attacked and has no valid moves, check for checkmate
         if king in attacked and not kingMoves:
-            checkmate = self.check_checkmate(white, range_, king)
+            checkmate = self._check_checkmate(whiteAttacking, range_, king)
 
         # Check for draw
-        draw = self.check_draw(range_, kingMoves)
+        draw = self._check_draw(range_, kingMoves)
 
         return checkmate, draw
 
 
-    def check_checkmate(self, white, range_, king):
+    def _check_checkmate(self, white, range_, king):
         """
         Given a bool indicating which color to get attacked spaces for, a range of pieces for the color whose turn it is and
         the square of the king for the color whose turn it is, return True if the king is in checkmate, and False if not.
@@ -470,8 +539,13 @@ class Board:
                             newBoard[move[0]][move[1]] = newBoard[self.selected[0]][self.selected[1]]
                             newBoard[self.selected[0]][self.selected[1]] = 0
 
+                            for l in range(8):
+                                for o in range(8):
+                                    cboard[l][o] = newBoard[l][o]
+
                             # Check if the king is still being attacked after the move
-                            attacked = attacked_spaces(newBoard, white, False)
+                            attacked = self.reference_to_space(engine.attacked_spaces(cboard, white, False))
+                            #attacked = attacked_spaces(newBoard, white, False)
 
                             # If the king is not being attacked after some move, then there is a possible move and no checkmate
                             if king not in attacked:
@@ -481,7 +555,7 @@ class Board:
         return True
 
 
-    def check_draw(self, range_, kingMoves):
+    def _check_draw(self, range_, kingMoves):
         """
         Given a range of pieces for the color whose turn it is and the possible moves for the king whose turn it is,
         return True if there is a draw and False otherwise.
@@ -543,6 +617,7 @@ class Board:
 
 
 
+
 def main():
     """
     Main function for controlling the chess board and pieces.
@@ -591,13 +666,6 @@ def main():
 
         # Display chess board
         else:
-            # Check for ending conditions
-            checkmate, stalemate = board.check_game_over()
-            if checkmate:
-                game_over(True)
-            if stalemate:
-                game_over(False)
-
             # Check for moves or selections
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -605,6 +673,12 @@ def main():
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if reset.collidepoint(event.pos):
                         board.reset(userTurn)
+                    # Check for ending conditions
+                    checkmate, stalemate = board.check_game_over()
+                    if checkmate:
+                        game_over(True)
+                    if stalemate:
+                        game_over(False)
                     mouse = pygame.mouse.get_pos()
                     board.move_piece(mouse)
 

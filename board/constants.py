@@ -1,6 +1,25 @@
 import pygame
 pygame.font.init()
 
+import ctypes
+import pathlib
+
+libname = pathlib.Path().absolute() / ".." / "engine" / "enginelib.so"
+engine = ctypes.CDLL(libname)
+cboard = (ctypes.c_int * 8 * 8)()
+cmove = ctypes.c_int * 2
+ccounter = ctypes.c_int * 40
+engine.free_array.restype = None
+engine.valid_pawn_moves.restype = ctypes.POINTER(ctypes.c_int)
+engine.valid_knight_moves.restype = ctypes.POINTER(ctypes.c_int)
+engine.valid_bishop_moves.restype = ctypes.POINTER(ctypes.c_int)
+engine.valid_rook_moves.restype = ctypes.POINTER(ctypes.c_int)
+engine.valid_queen_moves.restype = ctypes.POINTER(ctypes.c_int)
+engine.valid_king_moves.restype = ctypes.POINTER(ctypes.c_int)
+engine.attacked_spaces.restype = ctypes.POINTER(ctypes.c_int)
+#engine.castle_valid.restype = ctypes.c_bool
+#engine.checkmate.restype = ctypes.c_bool
+
 # Window constants
 WIDTH = 650
 HEIGHT = 700
@@ -33,6 +52,19 @@ START = [
     [26, 35, 0, 0, 0, 0, 15, 6],
     [28, 36, 0, 0, 0, 0, 16, 8]
 ]
+
+# Functions in the c file for moves return lists of integers where each integer corresponds to a unique space on the board
+# This constant dictionary maps those unique integers to their corresponding spaces on the board
+REFERENCES = {}
+row = 0
+column = 0
+for i in range(1, 65):
+    REFERENCES[i] = (row, column)
+    if column == 7:
+        column = 0
+        row += 1
+    else:
+        column += 1
 
 # Map pictures of pieces to their numerical equivalents on the START board
 PIECES = {}
