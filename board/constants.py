@@ -1,24 +1,25 @@
 import pygame
-pygame.font.init()
-
-import ctypes
+import sys
+import copy
+from ctypes import *
 import pathlib
 
+pygame.font.init()
+
 libname = pathlib.Path().absolute() / ".." / "engine" / "enginelib.so"
-engine = ctypes.CDLL(libname)
-cboard = (ctypes.c_int * 8 * 8)()
-cmove = ctypes.c_int * 2
-ccounter = ctypes.c_int * 40
+engine = CDLL(libname)
+cboard = (c_int * 8 * 8)()
+clast = (c_int * 2 * 2)()
+cmove = c_int * 2
+ccounter = c_int * 40
 engine.free_array.restype = None
-engine.valid_pawn_moves.restype = ctypes.POINTER(ctypes.c_int)
-engine.valid_knight_moves.restype = ctypes.POINTER(ctypes.c_int)
-engine.valid_bishop_moves.restype = ctypes.POINTER(ctypes.c_int)
-engine.valid_rook_moves.restype = ctypes.POINTER(ctypes.c_int)
-engine.valid_queen_moves.restype = ctypes.POINTER(ctypes.c_int)
-engine.valid_king_moves.restype = ctypes.POINTER(ctypes.c_int)
-engine.attacked_spaces.restype = ctypes.POINTER(ctypes.c_int)
-#engine.castle_valid.restype = ctypes.c_bool
-#engine.checkmate.restype = ctypes.c_bool
+engine.valid_king_moves.restype = POINTER(c_int)
+engine.attacked_spaces.restype = POINTER(c_int)
+engine.castle.restype = c_bool
+engine.checkmate.restype = POINTER(c_int)
+engine.get_moves.restype = POINTER(c_int)
+engine.en_passant.restype = c_bool
+engine.check_pawn_upgrade.restype = c_bool
 
 # Window constants
 WIDTH = 650
@@ -140,8 +141,8 @@ FIFTYMOVECOUNTER = 0
 # For tracking repetition stalemate
 REPETITION = []
 
-# For enpassant
-LASTMOVE = []
+# For enpassant, initialized to garbage values for C transfer
+LASTMOVE = [[0, 0], [0, 0]]
 
 # For markings on side of board
 BOARDNUMBERS = ['8', '7', '6', '5', '4', '3', '2', '1']

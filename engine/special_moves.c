@@ -1,27 +1,162 @@
-
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include "moves.h"
 
-int boardSpaces[8][8] = {
-    {1, 2, 3, 4, 5, 6, 7, 8},
-    {9, 10, 11, 12, 13, 14, 15, 16},
-    {17, 18, 19, 20, 21, 22, 23, 24},
-    {25, 26, 27, 28, 29, 30, 31, 32},
-    {33, 34, 35, 36, 37, 38, 39, 40},
-    {41, 42, 43, 44, 45, 46, 47, 48},
-    {49, 50, 51, 52, 53, 54, 55, 56},
-    {57, 58, 59, 60, 61, 62, 63, 64}
-};
 
-bool castle_valid(int spaces[][2], int board[8][8], int pieces[2], bool queen, bool whiteAttacking, int moveCounts[2]) {
+// Function has same logic as castle_valid implemented in processes.py, where a function description can be found
+bool castle(bool white, int space[2], int moveSpace[2], int board[8][8], int moveCounts[40]) {
+    bool queen;
+    bool whiteAttacking;
+    // Spaces that must be checked for attacks in each castle situation
+    int kspacesw[3][2] = {{6, 7}, {5, 7}, {4, 7}};
+    int qspacesw[4][2] = {{2, 7}, {3, 7}, {4, 7}, {0, 7}};
+    int kspacesb[3][2] = {{6, 0}, {5, 0}, {4, 0}};
+    int qspacesb[4][2] = {{2, 0}, {3, 0}, {4, 0}, {0, 0}};
+    int i, j;
+    // Allocate memory for passing info to castle_valid
+    int* pieces = malloc(sizeof(int) * 2);
+    if (!pieces) {
+        printf("Memory allocation error\n"); 
+        exit(1);
+    }
+    int* counts = malloc(sizeof(int) * 2);
+    if (!counts) {
+        printf("Memory allocation error\n"); 
+        exit(1);
+    }
+    int** spaces = malloc(sizeof(int*) * 4);
+    if (!spaces) {
+        printf("Memory allocation error\n");
+        exit(1);
+    }
+    for (i = 0; i < 4; i++) {
+        spaces[i] = malloc(sizeof(int) * 2);
+        if (!spaces[i]) {
+            printf("Memory allocation error\n");
+            exit(1);
+        }
+    }
+
+    if (white) {
+        whiteAttacking = false;
+        // If king is selected
+        if (board[space[0]][space[1]] == 1) {
+            // If kingside white
+            if (moveSpace[0] == 6 && moveSpace[1] == 7) {
+                for (i = 0; i < 3; i++) {
+                    for (j = 0; j < 2; j++) {
+                        spaces[i][j] = kspacesw[i][j];
+                    }
+                }
+                pieces[0] = 1;
+                pieces[1] = 8;
+                counts[0] = moveCounts[0];
+                counts[1] = moveCounts[7];
+                queen = false;
+                return castle_valid(spaces, board, pieces, queen, whiteAttacking, counts);
+            }
+
+            // If queenside white
+            else if (moveSpace[0] == 2 && moveSpace[1] == 7) {
+                for (i = 0; i < 4; i++) {
+                    for (j = 0; j < 2; j++) {
+                        spaces[i][j] = qspacesw[i][j];
+                    }
+                }
+                pieces[0] = 1;
+                pieces[1] = 7;
+                counts[0] = moveCounts[0];
+                counts[1] = moveCounts[6];
+                queen = true;
+                return castle_valid(spaces, board, pieces, queen, whiteAttacking, counts);
+            }
+        }
+    }
+
+    else {
+        whiteAttacking = true;
+        if (board[space[0]][space[1]] == 21) {
+            // If kingside black
+            if (moveSpace[0] == 6 && moveSpace[1] == 0) {
+                for (i = 0; i < 3; i++) {
+                    for (j = 0; j < 2; j++) {
+                        spaces[i][j] = kspacesb[i][j];
+                    }
+                }
+                pieces[0] = 21;
+                pieces[1] = 28;
+                counts[0] = moveCounts[20];
+                counts[1] = moveCounts[27];
+                queen = false;
+                return castle_valid(spaces, board, pieces, queen, whiteAttacking, counts);
+            }
+
+            // If queenside black
+            else if (moveSpace[0] == 2 && moveSpace[1] == 0) {
+                for (i = 0; i < 4; i++) {
+                    for (j = 0; j < 2; j++) {
+                        spaces[i][j] = qspacesb[i][j];
+                    }
+                }
+                pieces[0] = 21;
+                pieces[1] = 27;
+                counts[0] = moveCounts[20];
+                counts[1] = moveCounts[26];
+                queen = true;
+                return castle_valid(spaces, board, pieces, queen, whiteAttacking, counts);
+            }
+        }
+    }
+
+    free(pieces);
+    free(counts);
+    for (i = 0; i < 4; i++) {
+        free(spaces[i]);
+    }
+    free(spaces);
+
+    return false;
+}
+
+
+bool castle_valid(int** spaces, int board[8][8], int pieces[2], bool queen, bool whiteAttacking, int moveCounts[2]) {
+    int i;
+    // If king and rook have not moved
     if (moveCounts[0] == 0 && moveCounts[1] == 0) {
+        // If kingside
         if (!queen) {
+            // If spaces between king and rook are empty
             if (board[spaces[0][0]][spaces[0][1]] == 0 && board[spaces[1][0]][spaces[1][1]] == 0) {
+                // Check if king or spaces king moves through are attacked
                 int* attacked = attacked_spaces(board, whiteAttacking, false);
                 bool valid = true;
-                for (int i=1; i<attacked[0]+1; i++) {
-                    if (attacked[i] == boardSpaces[spaces[0][0]][spaces[0][1]] ||
-                        attacked[i] == boardSpaces[spaces[1][0]][spaces[1][1]] ||
-                        attacked[i] == boardSpaces[spaces[2][0]][spaces[2][1]]) {
+                for (i = 1; i < attacked[0] + 1; i++) {
+                    if (attacked[i] == BOARDSPACES[spaces[0][0]][spaces[0][1]] ||
+                        attacked[i] == BOARDSPACES[spaces[1][0]][spaces[1][1]] ||
+                        attacked[i] == BOARDSPACES[spaces[2][0]][spaces[2][1]]) {
+                            valid = false;
+                        }
+                }
+                free(attacked);
+                // If king is not moving through check, castle is valid
+                if (valid) {
+                    return true;
+                }
+            }
+        }
+
+        else {
+            // Same for queenside
+            if (board[spaces[0][0]][spaces[0][1]] == 0 && board[spaces[1][0]][spaces[1][1]] == 0
+                && board[spaces[2][0]][spaces[2][1]]) {
+                int* attacked = attacked_spaces(board, whiteAttacking, false);
+                bool valid = true;
+                for (i = 1; i < attacked[0] + 1; i++) {
+                    if (attacked[i] == BOARDSPACES[spaces[3][0]][spaces[3][1]] ||
+                        attacked[i] == BOARDSPACES[spaces[2][0]][spaces[2][1]] ||
+                        attacked[i] == BOARDSPACES[spaces[1][0]][spaces[1][1]]) {
                             valid = false;
                         }
                 }
@@ -31,26 +166,70 @@ bool castle_valid(int spaces[][2], int board[8][8], int pieces[2], bool queen, b
                 }
             }
         }
+    }
 
-        else {
-            if (board[spaces[0][0]][spaces[0][1]] == 0 && board[spaces[1][0]][spaces[1][1]] == 0
-                && board[spaces[2][0]][spaces[2][1]]) {
-                    int* attacked = attacked_spaces(board, whiteAttacking, false);
-                    bool valid = true;
-                    for (int i=1; i<attacked[0]+1; i++) {
-                        if (attacked[i] == boardSpaces[spaces[3][0]][spaces[3][1]] ||
-                            attacked[i] == boardSpaces[spaces[2][0]][spaces[2][1]] ||
-                            attacked[i] == boardSpaces[spaces[1][0]][spaces[1][1]]) {
-                                valid = false;
-                            }
-                    }
-                    free(attacked);
-                    if (valid) {
+    return false;
+}
+
+
+bool en_passant(bool white, int lastMove[2][2], int board[8][8], int space[2], int moveSpace[2]) {
+    // If the last move was made by a pawn
+    if ((board[lastMove[1][0]][lastMove[1][1]] >= 9 && board[lastMove[1][0]][lastMove[1][1]] < 17) ||
+        (board[lastMove[1][0]][lastMove[1][1]] >= 29 && board[lastMove[1][0]][lastMove[1][1]] < 37)) {
+
+        // Spaces to the right and left of the last pawn to move
+        int rightSpace[2] = {lastMove[1][0] + 1, lastMove[1][1]};
+        int leftSpace[2] = {lastMove[1][0] - 1, lastMove[1][1]};
+
+        if (white) {
+            // If the last move was 2 spaces forward
+            if (lastMove[1][1] - lastMove[0][1] == 2) {
+                // If the piece attempting en passant is to the left or right of the opposing pawn and the piece is a pawn
+                if (((!memcmp(space, rightSpace, sizeof(int) * 2)) || (!memcmp(space, leftSpace, sizeof(int) * 2))) &&
+                (board[space[0]][space[1]] >= 9 && board[space[0]][space[1]] < 17)) {
+                    // If the piece is trying to move behind the pawn, the move is valid
+                    int behindSpace[2] = {lastMove[1][0], lastMove[1][1] - 1};
+                    if (!memcmp(moveSpace, behindSpace, sizeof(int) * 2)) {
                         return true;
                     }
                 }
+            }
+        }
+
+        else {
+            // Same as above but for black
+            if (lastMove[0][1] - lastMove[1][1] == 2) {
+                if (((!memcmp(space, rightSpace, sizeof(int) * 2)) || (!memcmp(space, leftSpace, sizeof(int) * 2))) &&
+                (board[space[0]][space[1]] >= 29 && board[space[0]][space[1]] < 37)) {
+                    int behindSpace[2] = {lastMove[1][0], lastMove[1][1] + 1};
+                    if (!memcmp(moveSpace, behindSpace, sizeof(int) * 2)) {
+                        return true;
+                    }
+                }
+            }
         }
     }
 
     return false;
 }
+
+
+bool check_pawn_upgrade(bool white, int board[8][8], int space[2], int moveCol) {
+    if (white) {
+        if (board[space[0]][space[1]] >= 9 && board[space[0]][space[1]] < 17) {
+            if (moveCol == 0) {
+                return true;
+            }
+        }
+    }
+
+    else {
+        if (board[space[0]][space[1]] >= 29 && board[space[0]][space[1]] < 37) {
+            if (moveCol == 7) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}    
