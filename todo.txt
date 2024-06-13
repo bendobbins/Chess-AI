@@ -1,0 +1,5 @@
+Create move counter to ensure chess board is working properly
+Check python code vs C code and transition everything back to python
+Determine how to represent board so that it can be passed to the neural network
+Determine best structure for the neural network (Better to hard code openings then use network for the rest?)
+Determine how to represent & collect past games that can be passed to the network for training

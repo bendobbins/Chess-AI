@@ -313,8 +313,6 @@ int* valid_queen_moves(int start[2], int board[8][8], int piece, bool checkProte
 
 
 int* valid_king_moves(int start[2], int board[8][8], int piece, bool checkProtected) {
-    int counter = 0;
-
     // Keep track of spaces that are in check or occupied by a friendly
     bool invalidMoves[64];
     for (int i = 0; i < 64; i++) {

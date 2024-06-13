@@ -1,4 +1,5 @@
 import pygame
+import constants
 
 # Window constants
 WIDTH = 650
@@ -102,3 +103,20 @@ def select_square(mouse):
             if box.collidepoint(mouse):
                 return (box_x, box_y)
     return None
+
+
+
+def display_pawn_upgrade_choice():
+    """
+    Given a space that a piece is moving to, check if the piece is a pawn and the
+    space is on the last rank. If both are true, prompt the user for which piece they
+    would like to upgrade to and return the first letter of that piece, else None.
+    """
+    while True:
+        for event in pygame.event.get():
+            draw_text([WIDTH / 2], [HEIGHT - 55], ["Press q for Queen, r for Rook, b for Bishop, or k for Knight"], [SMALLFONT], LIGHTGREY)
+            pygame.display.update()
+            if event.type == pygame.KEYDOWN:
+                for key in constants.UPGRADEPIECES:
+                    if event.key == key:
+                        return constants.UPGRADEPIECES[key]

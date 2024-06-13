@@ -27,6 +27,11 @@ const int REFERENCES[64][2] = {
     {7, 0}, {7, 1}, {7, 2}, {7, 3}, {7, 4}, {7, 5}, {7, 6}, {7, 7}
 };
 
+// Values of pieces
+const int PIECEVALUES[20] = {
+    0, 9, 3, 3, 3, 3, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1, 9, 3, 3, 5
+};
+
 // Insufficient material situations if there are 3 pieces on the board
 const int INSUFFICIENT3[12][3] = {
     {1, 3, 21},

@@ -26,6 +26,11 @@ extern const int INSUFFICIENT3[12][3];
 extern const int INSUFFICIENT4[42][4];
 #endif // INSUFFICIENT4_H
 
+#ifndef PIECEVALUES_H
+#define PIECEVALUES_H
+extern const int PIECEVALUES[20];
+#endif // PIECEVALUES_H
+
 // moves.c prototypes
 int* get_moves(int board[8][8], int selected[2], int moveCount);
 int* valid_pawn_moves(int start[2], int board[8][8], int piece, int moveCounter);

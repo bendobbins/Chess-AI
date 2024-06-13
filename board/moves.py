@@ -1,6 +1,6 @@
 import operator
 
-def valid_moves_pawn(start, board, piece, moveCounter):
+def valid_moves_pawn(start, board, piece):
     """
     Given a starting space, a chess board, the type of piece and the amount of times that piece has moved,
     return a list of tuples where each tuple is a possible space for a pawn to move.
@@ -20,12 +20,11 @@ def valid_moves_pawn(start, board, piece, moveCounter):
         
         # If there is not a piece in front of the pawn
         if not board[start[0]][start[1] + 1]:
-            # If pawn has not moved yet
-            if not moveCounter:
-                # If there is not a piece 2 spaces in front of the pawn
-                if not board[start[0]][start[1] + 2]:
-                    # Add possible moves
-                    moveList.append((start[0], start[1] + 2))
+            # If pawn has not moved yet (it should still be in the 1st column, which is the starting column for black pawns)
+            # If there is not a piece 2 spaces in front of the pawn
+            if start[1] == 1 and not board[start[0]][start[1] + 2]:
+                # Add possible moves
+                moveList.append((start[0], start[1] + 2))
             moveList.append((start[0], start[1] + 1))
 
     # White piece
@@ -35,12 +34,12 @@ def valid_moves_pawn(start, board, piece, moveCounter):
         if start[0] != 0:
             moveList = check_pawn_move(board, (start[0] - 1, start[1] - 1), moveList, True)
         if not board[start[0]][start[1] - 1]:
-            if not moveCounter:
-                if not board[start[0]][start[1] - 2]:
-                    moveList.append((start[0], start[1] - 2))
+            if start[1] == 6 and not board[start[0]][start[1] - 2]:
+                moveList.append((start[0], start[1] - 2))
             moveList.append((start[0], start[1] - 1))
 
     return moveList
+
 
 def check_pawn_move(board, space, moveList, white):
     """
@@ -61,6 +60,7 @@ def check_pawn_move(board, space, moveList, white):
         pass
 
     return moveList
+
 
 
 
@@ -97,6 +97,7 @@ def valid_moves_knight(start, board, piece, checkProtected):
 
     return moveList
 
+
 def check_knight_move(board, space, moveList, white, checkProtected):
     """
     Check if a space on a board is a possible move for a knight, add it to moveList if it is.
@@ -120,6 +121,7 @@ def check_knight_move(board, space, moveList, white, checkProtected):
         moveList.append(space)
 
     return moveList
+
 
 
 
@@ -186,6 +188,7 @@ def valid_moves_bishop(start, board, piece, checkProtected):
 
 
 
+
 def valid_moves_rook(start, board, piece, checkProtected):
     """
     Given a starting space, a chess board, the type of piece and a bool for whether to include squares with 
@@ -204,6 +207,7 @@ def valid_moves_rook(start, board, piece, checkProtected):
     moveList = check_rook_direction(start[1], start[0], operator.sub, True, moveList, piece, board, checkProtected)
     moveList = check_rook_direction(start[1], start[0], operator.add, True, moveList, piece, board, checkProtected)
     return moveList
+
             
 def check_rook_direction(dynamic, static, operation, dynamic_column, moveList, piece, board, checkProtected):
     """
@@ -263,6 +267,7 @@ def check_rook_direction(dynamic, static, operation, dynamic_column, moveList, p
 
 
 
+
 def valid_moves_queen(start, board, piece, checkProtected):
     """
     Given a starting space, a chess board, the type of piece and a bool for whether to include squares with 
@@ -278,6 +283,7 @@ def valid_moves_queen(start, board, piece, checkProtected):
     moveList += valid_moves_rook(start, board, piece, checkProtected)
     moveList += valid_moves_bishop(start, board, piece, checkProtected)
     return moveList
+
 
 
 
@@ -306,9 +312,9 @@ def valid_moves_king(start, board, piece, checkProtected):
 
     # All spaces attacked by the other color are invalid moves for a king
     if piece == 21:
-        invalidMoves += attacked_spaces(board, True, checkProtected)
+        invalidMoves += board.attacked_spaces(checkProtected)
     else:
-        invalidMoves += attacked_spaces(board, False, checkProtected)
+        invalidMoves += board.attacked_spaces(checkProtected)
 
     for move in moveList:
         # If the move is out of the board, it is invalid
@@ -318,10 +324,10 @@ def valid_moves_king(start, board, piece, checkProtected):
 
         # Squares with black pieces are invalid for black king, vice versa for white
         if piece == 21:
-            if board[move[0]][move[1]] in range(22, 41):
+            if board.board[move[0]][move[1]] in range(22, 41):
                 invalidMoves.append(move)
         else:
-            if board[move[0]][move[1]] in range(2, 21):
+            if board.board[move[0]][move[1]] in range(2, 21):
                 invalidMoves.append(move)
 
     # Remove all possible moves that are invalid
@@ -330,6 +336,9 @@ def valid_moves_king(start, board, piece, checkProtected):
             moveList.remove(move)
 
     return moveList
+
+
+
 
 def pawn_attacks(start, white):
     """
@@ -350,47 +359,15 @@ def pawn_attacks(start, white):
     
     return moves
 
-def attacked_spaces(board, white, checkProtected):
-    """
-    Given a list of lists representing a chess board, a bool for the color of the pieces to check attacked squares for and
-    a bool for whether or not to include squares with friendly pieces as attacked squares, return a list of all squares attacked
-    by all pieces of the indicated color.
-    """
-    attacked = []
-    for i in range(len(board)):
-        for j in range(len(board)):
 
-            # Find all squares attacked by white
-            if white:
-                if board[i][j] in range(9, 17):
-                    attacked += pawn_attacks((i, j), True)
-                elif board[i][j] in range(7, 9) or board[i][j] == 20:
-                    attacked += valid_moves_rook((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] in range(5, 7) or board[i][j] == 19:
-                    attacked += valid_moves_knight((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] in range(3, 5) or board[i][j] == 18:
-                    attacked += valid_moves_bishop((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] == 2 or board[i][j] == 17:
-                    attacked += valid_moves_queen((i, j), board, board[i][j], checkProtected)
-                # Append all possible king moves since board boundaries don't really matter for finding attacked spaces
-                elif board[i][j] == 1:
-                    attacked += [(i, j + 1), (i, j - 1), (i - 1, j), (i + 1, j), (i + 1, j - 1),
-                                    (i + 1, j + 1), (i - 1, j + 1), (i - 1, j - 1)]
 
-            # Find all squares attacked by black
-            else:
-                if board[i][j] in range(29, 37):
-                    attacked += pawn_attacks((i, j), False)
-                elif board[i][j] in range(27, 29) or board[i][j] == 40:
-                    attacked += valid_moves_rook((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] in range(25, 27) or board[i][j] == 39:
-                    attacked += valid_moves_knight((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] in range(23, 25) or board[i][j] == 38:
-                    attacked += valid_moves_bishop((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] == 22 or board[i][j] == 37:
-                    attacked += valid_moves_queen((i, j), board, board[i][j], checkProtected)
-                elif board[i][j] == 21:
-                    attacked += [(i, j + 1), (i, j - 1), (i - 1, j), (i + 1, j), (i + 1, j - 1),
-                                    (i + 1, j + 1), (i - 1, j + 1), (i - 1, j - 1)]
-    
+
+def parse_attacked(attacked):
+    # Remove attacks outside of board range
+    removes = []
+    for attack in attacked:
+        if attack[0] < 0 or attack[1] < 0 or attack[0] > 7 or attack[1] > 7:
+            removes.append(attack)
+    for attack in removes:
+        attacked.remove(attack)
     return attacked

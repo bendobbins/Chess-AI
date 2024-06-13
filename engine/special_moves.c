@@ -45,32 +45,37 @@ bool castle(bool white, int space[2], int moveSpace[2], int board[8][8], int mov
         if (board[space[0]][space[1]] == 1) {
             // If kingside white
             if (moveSpace[0] == 6 && moveSpace[1] == 7) {
-                for (i = 0; i < 3; i++) {
-                    for (j = 0; j < 2; j++) {
-                        spaces[i][j] = kspacesw[i][j];
+                // If piece in corner is rook
+                if (board[7][7] == 8) {
+                    for (i = 0; i < 3; i++) {
+                        for (j = 0; j < 2; j++) {
+                            spaces[i][j] = kspacesw[i][j];
+                        }
                     }
+                    pieces[0] = 1;
+                    pieces[1] = 8;
+                    counts[0] = moveCounts[0];
+                    counts[1] = moveCounts[7];
+                    queen = false;
+                    return castle_valid(spaces, board, pieces, queen, whiteAttacking, counts);
                 }
-                pieces[0] = 1;
-                pieces[1] = 8;
-                counts[0] = moveCounts[0];
-                counts[1] = moveCounts[7];
-                queen = false;
-                return castle_valid(spaces, board, pieces, queen, whiteAttacking, counts);
             }
 
             // If queenside white
             else if (moveSpace[0] == 2 && moveSpace[1] == 7) {
-                for (i = 0; i < 4; i++) {
-                    for (j = 0; j < 2; j++) {
-                        spaces[i][j] = qspacesw[i][j];
+                if (board[0][7] == 7) {
+                    for (i = 0; i < 4; i++) {
+                        for (j = 0; j < 2; j++) {
+                            spaces[i][j] = qspacesw[i][j];
+                        }
                     }
+                    pieces[0] = 1;
+                    pieces[1] = 7;
+                    counts[0] = moveCounts[0];
+                    counts[1] = moveCounts[6];
+                    queen = true;
+                    return castle_valid(spaces, board, pieces, queen, whiteAttacking, counts);
                 }
-                pieces[0] = 1;
-                pieces[1] = 7;
-                counts[0] = moveCounts[0];
-                counts[1] = moveCounts[6];
-                queen = true;
-                return castle_valid(spaces, board, pieces, queen, whiteAttacking, counts);
             }
         }
     }
@@ -80,32 +85,36 @@ bool castle(bool white, int space[2], int moveSpace[2], int board[8][8], int mov
         if (board[space[0]][space[1]] == 21) {
             // If kingside black
             if (moveSpace[0] == 6 && moveSpace[1] == 0) {
-                for (i = 0; i < 3; i++) {
-                    for (j = 0; j < 2; j++) {
-                        spaces[i][j] = kspacesb[i][j];
+                if (board[7][0] == 28) {
+                    for (i = 0; i < 3; i++) {
+                        for (j = 0; j < 2; j++) {
+                            spaces[i][j] = kspacesb[i][j];
+                        }
                     }
+                    pieces[0] = 21;
+                    pieces[1] = 28;
+                    counts[0] = moveCounts[20];
+                    counts[1] = moveCounts[27];
+                    queen = false;
+                    return castle_valid(spaces, board, pieces, queen, whiteAttacking, counts);
                 }
-                pieces[0] = 21;
-                pieces[1] = 28;
-                counts[0] = moveCounts[20];
-                counts[1] = moveCounts[27];
-                queen = false;
-                return castle_valid(spaces, board, pieces, queen, whiteAttacking, counts);
             }
 
             // If queenside black
             else if (moveSpace[0] == 2 && moveSpace[1] == 0) {
-                for (i = 0; i < 4; i++) {
-                    for (j = 0; j < 2; j++) {
-                        spaces[i][j] = qspacesb[i][j];
+                if (board[0][0] == 27) {
+                    for (i = 0; i < 4; i++) {
+                        for (j = 0; j < 2; j++) {
+                            spaces[i][j] = qspacesb[i][j];
+                        }
                     }
+                    pieces[0] = 21;
+                    pieces[1] = 27;
+                    counts[0] = moveCounts[20];
+                    counts[1] = moveCounts[26];
+                    queen = true;
+                    return castle_valid(spaces, board, pieces, queen, whiteAttacking, counts);
                 }
-                pieces[0] = 21;
-                pieces[1] = 27;
-                counts[0] = moveCounts[20];
-                counts[1] = moveCounts[26];
-                queen = true;
-                return castle_valid(spaces, board, pieces, queen, whiteAttacking, counts);
             }
         }
     }
@@ -180,31 +189,47 @@ bool en_passant(bool white, int lastMove[2][2], int board[8][8], int space[2], i
         // Spaces to the right and left of the last pawn to move
         int rightSpace[2] = {lastMove[1][0] + 1, lastMove[1][1]};
         int leftSpace[2] = {lastMove[1][0] - 1, lastMove[1][1]};
+        int behindSpace[2], checkDoubleMove, pawnRange[2], kingSpot[2], i, j;
 
         if (white) {
-            // If the last move was 2 spaces forward
-            if (lastMove[1][1] - lastMove[0][1] == 2) {
-                // If the piece attempting en passant is to the left or right of the opposing pawn and the piece is a pawn
-                if (((!memcmp(space, rightSpace, sizeof(int) * 2)) || (!memcmp(space, leftSpace, sizeof(int) * 2))) &&
-                (board[space[0]][space[1]] >= 9 && board[space[0]][space[1]] < 17)) {
-                    // If the piece is trying to move behind the pawn, the move is valid
-                    int behindSpace[2] = {lastMove[1][0], lastMove[1][1] - 1};
-                    if (!memcmp(moveSpace, behindSpace, sizeof(int) * 2)) {
-                        return true;
-                    }
+            checkDoubleMove = lastMove[1][1] - lastMove[0][1];
+            behindSpace[0] = lastMove[1][0];
+            behindSpace[1] = lastMove[1][1] - 1;
+            pawnRange[0] = 9;
+            pawnRange[1] = 17;
+        } else {
+            checkDoubleMove = lastMove[0][1] - lastMove[1][1];
+            behindSpace[0] = lastMove[1][0];
+            behindSpace[1] = lastMove[1][1] + 1;
+            pawnRange[0] = 29;
+            pawnRange[1] = 37;
+        }
+        for (i = 0; i < 8; i++) {
+            for (j = 0; j < 8; j++) {
+                if ((board[i][j] == 1 && white) || (board[i][j] == 21 && !white)) {
+                    kingSpot[0] = i;
+                    kingSpot[1] = j;
                 }
             }
         }
 
-        else {
-            // Same as above but for black
-            if (lastMove[0][1] - lastMove[1][1] == 2) {
-                if (((!memcmp(space, rightSpace, sizeof(int) * 2)) || (!memcmp(space, leftSpace, sizeof(int) * 2))) &&
-                (board[space[0]][space[1]] >= 29 && board[space[0]][space[1]] < 37)) {
-                    int behindSpace[2] = {lastMove[1][0], lastMove[1][1] + 1};
-                    if (!memcmp(moveSpace, behindSpace, sizeof(int) * 2)) {
-                        return true;
+        // If the last move was 2 spaces forward
+        if (checkDoubleMove == 2) {
+            // If the piece attempting en passant is to the left or right of the opposing pawn and the piece is a pawn
+            if (((space[0] == rightSpace[0] && space[1] == rightSpace[1]) || (space[0] == leftSpace[0] && space[1] == leftSpace[1])) &&
+            (board[space[0]][space[1]] >= pawnRange[0] && board[space[0]][space[1]] < pawnRange[1])) {
+                // If the piece is trying to move behind the pawn, the move is valid
+                if (behindSpace[0] == moveSpace[0] && behindSpace[1] == moveSpace[1]) {
+                    board[moveSpace[0]][moveSpace[1]] = board[space[0]][space[1]];
+                    board[space[0]][space[1]] = 0;
+                    board[lastMove[1][0]][lastMove[1][1]] = 0;
+                    int* attacked = attacked_spaces(board, !white, false);
+                    for (int i = 1; i < attacked[0] + 1; i++) {
+                        if (attacked[i] == BOARDSPACES[kingSpot[0]][kingSpot[1]]) {
+                            return false;
+                        }
                     }
+                    return true;
                 }
             }
         }
